@@ -1,0 +1,10 @@
+app: auth-api  # Replace with your desired application name
+githubRepo: https://github.com/bcgov/EPIC.auth.git  # Replace with your actual repo URL
+githubContextDir: /auth-api
+resources:
+  limits:
+    cpu: 600m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
