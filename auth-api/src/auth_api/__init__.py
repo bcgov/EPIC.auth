@@ -58,17 +58,6 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     if os.getenv("FLASK_ENV", "production") != "testing":
         setup_jwt_manager(app, jwt)
 
-    # Database connection initialize
-    db.init_app(app)
-
-    # # Database migrate initialize
-    migrate.init_app(app, db)
-    with app.app_context():
-        db.create_all()
-
-    # Marshmallow initialize
-    ma.init_app(app)
-
     @app.before_request
     def set_origin():
         g.origin_url = request.environ.get("HTTP_ORIGIN", "localhost")
