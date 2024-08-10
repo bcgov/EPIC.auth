@@ -27,6 +27,7 @@ from flask import Blueprint
 from .apihelper import Api
 
 from .user import API as USER_API
+from .ops import API as OPS_API
 
 __all__ = ('API_BLUEPRINT',)
 
@@ -49,6 +50,9 @@ API = Api(
     description='The Core API for auth',
     authorizations=authorizations
 )
+
+API.add_namespace(OPS_API, path="/")
+
 
 # HANDLER = ExceptionHandler(API)
 
