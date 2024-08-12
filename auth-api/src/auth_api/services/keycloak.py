@@ -68,7 +68,8 @@ class KeycloakService:
     @staticmethod
     def update_user_group(user_id, group_id):
         """Update the group of user"""
-        return KeycloakService._request_keycloak(f'users/{user_id}/groups/{group_id}', HttpMethod.PUT)
+        kc_user_id = KeycloakService.get_user_by_id(user_id)['id']
+        return KeycloakService._request_keycloak(f'users/{kc_user_id}/groups/{group_id}', HttpMethod.PUT)
 
     @staticmethod
     def delete_user_group(user_id, group_id):
