@@ -7,10 +7,9 @@ class UserService:
     """User management service."""
 
     @classmethod
-    def get_user_by_id(cls, _user_id):
+    def get_user_by_id(cls, user_id):
         """Get user by id."""
-        db_user = UserModel.find_by_id(_user_id)
-        return db_user
+        return KeycloakService.get_user_by_id(user_id)
 
     @classmethod
     def get_all_users(cls):

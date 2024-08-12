@@ -27,6 +27,24 @@ class KeycloakService:
         return response.json()
 
     @staticmethod
+    def get_user():
+        """Get users"""
+        response = KeycloakService._request_keycloak('users?max=2000')
+        return response.json()
+
+    @staticmethod
+    def get_user_by_id(username):
+        """Get users"""
+        response = KeycloakService._request_keycloak(f'users?username={username}')
+        users = response.json()
+
+        if not users:
+            raise ValueError(f"User with username '{username}' not found.")
+
+        # Assuming usernames are unique, return the first user found
+        return users[0]
+
+    @staticmethod
     def get_users():
         """Get users"""
         response = KeycloakService._request_keycloak('users?max=2000')
