@@ -32,6 +32,12 @@ class KeycloakService:
         response = KeycloakService._request_keycloak('users?max=2000')
         return response.json()
 
+    @classmethod
+    def get_user_groups_by_id(cls, user_id):
+        """Get groups of a specific user by their ID."""
+        response = KeycloakService._request_keycloak(f'users/{user_id}/groups')
+        return response.json()
+
     @staticmethod
     def get_user_by_id(username):
         """Get users"""
@@ -48,6 +54,24 @@ class KeycloakService:
     def get_users():
         """Get users"""
         response = KeycloakService._request_keycloak('users?max=2000')
+        return response.json()
+
+    @staticmethod
+    def get_members_for_groups(groups):
+        """Get all groups with their members."""
+
+        # For each group, get its members
+        for group in groups:
+            group_id = group['id']
+            members_response = KeycloakService._request_keycloak(f'groups/{group_id}/members')
+            group['members'] = members_response.json()
+
+        return groups
+
+    @staticmethod
+    def get_members_for_group(group_id):
+        """Get the members of a group"""
+        response = KeycloakService._request_keycloak(f'groups/{group_id}/members')
         return response.json()
 
     @staticmethod

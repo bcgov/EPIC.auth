@@ -60,7 +60,9 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
 
     @app.before_request
     def set_origin():
+        # Debug logging
         g.origin_url = request.environ.get("HTTP_ORIGIN", "localhost")
+        g.app_name = request.headers.get("App-Id", None)
 
     build_cache(app)
 

@@ -44,7 +44,7 @@ class UserService:
             user["groups"] = [group for group in app_groups if user["id"] in group_members.get(group["id"], set())]
 
         # Return only users with at least one group if filtered by app_name
-        return [user for user in users if user["group"]] if app_name else users
+        return [user for user in users if user["groups"]] if app_name else users
 
     @classmethod
     def _get_level(cls, group):
