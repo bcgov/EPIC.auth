@@ -22,7 +22,7 @@ class UserSchema(Schema):
     lastName = fields.Str(data_key='last_name')
     email = fields.Str(data_key='email_address')
     username = fields.Str(data_key='username')
-    group = fields.Nested(UserGroupResponseSchema)
+    groups = fields.List(fields.Nested(UserGroupResponseSchema))
 
 
 class UserRequestSchema(Schema):

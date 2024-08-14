@@ -7,9 +7,18 @@ class UserService:
     """User management service."""
 
     @classmethod
-    def get_user_by_id(cls, user_id):
+    def get_user_by_id(cls, user_id, app_name=None):
         """Get user by id."""
-        return KeycloakService.get_user_by_id(user_id)
+        user = KeycloakService.get_user_by_id(user_id)
+
+        user_groups = KeycloakService.get_user_groups(user.get('id'))
+
+        app_groups = [group for group in user_groups if
+                      app_name.lower() in group.get("path", "").lower()] if app_name else user_groups
+
+        # Add groups to user data
+        user["groups"] = app_groups
+        return user
 
     @classmethod
     def get_all_users(cls, app_name=None):
@@ -20,14 +29,19 @@ class UserService:
         app_groups = [group for group in groups if
                       app_name.lower() in group.get("path", "").lower()] if app_name else groups
 
+        # Create a dictionary to map group IDs to members
+        group_members = {}
         for group in app_groups:
             members = KeycloakService.get_group_members(group["id"])
             member_ids = {member["id"] for member in members}
-            for user in users:
-                if user["id"] in member_ids:
-                    user["group"] = group
+            group_members[group["id"]] = member_ids
 
-        return [user for user in users if user.get("group")] if app_name else users
+        # Map users to their groups
+        for user in users:
+            user["groups"] = [group for group in app_groups if user["id"] in group_members.get(group["id"], set())]
+
+        # Return only users with at least one group if filtered by app_name
+        return [user for user in users if user["group"]] if app_name else users
 
     @classmethod
     def _get_level(cls, group):

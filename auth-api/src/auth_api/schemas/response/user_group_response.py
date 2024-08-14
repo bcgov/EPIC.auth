@@ -37,6 +37,6 @@ class UserGroupResponseSchema(Schema):
         return attributes.get("display_name", [None])[0]
 
     def get_path(self, instance):
-        """Format the path of the group from keycloak"""
-        path = instance["path"]
-        return path[1:len(path)]
+        """Format the path of the group from Keycloak, or return an empty string if not present"""
+        path = instance.get("path", "")
+        return path[1:] if path else ""

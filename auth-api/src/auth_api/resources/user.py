@@ -74,7 +74,8 @@ class User(Resource):
     @API.response(404, "Not Found")
     def get(user_id):
         """Fetch a user by id."""
-        user = UserService.get_user_by_id(user_id)
+        app_name = request.args.get('app_name', None)
+        user = UserService.get_user_by_id(user_id, app_name)
         if not user:
             raise ResourceNotFoundError(f"User with {user_id} not found")
         return UserSchema().dump(user), HTTPStatus.OK
@@ -149,4 +150,3 @@ class Groups(Resource):
         """Get all groups"""
         reponse_schema = UserGroupResponseSchema(many=True)
         return reponse_schema.dump(UserService.get_groups()), HTTPStatus.OK
-
