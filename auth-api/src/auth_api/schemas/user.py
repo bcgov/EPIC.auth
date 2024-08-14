@@ -5,6 +5,7 @@ Manages the engagement
 
 from marshmallow import EXCLUDE, Schema, fields
 from auth_api.models import User
+from .user_group_response import UserGroupResponseSchema
 
 
 class UserSchema(Schema):
@@ -21,6 +22,7 @@ class UserSchema(Schema):
     lastName = fields.Str(data_key='last_name')
     email = fields.Str(data_key='email_address')
     username = fields.Str(data_key='username')
+    group = fields.Nested(UserGroupResponseSchema)
 
 
 class UserRequestSchema(Schema):

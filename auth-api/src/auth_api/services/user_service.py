@@ -12,9 +12,32 @@ class UserService:
         return KeycloakService.get_user_by_id(user_id)
 
     @classmethod
-    def get_all_users(cls):
-        """Get all users."""
-        return KeycloakService.get_users()
+    def get_all_users(cls, app_name):
+        """Get all users"""
+        users = KeycloakService.get_users()
+        for user in users:
+            user["group"] = None
+        groups = UserService.get_groups()
+        groups = sorted(groups, key=UserService._get_level)
+        app_groups = [group for group in groups if app_name.lower() in group.get("path", "").lower()]
+
+        for group in app_groups:
+            members = KeycloakService.get_group_members(group["id"])
+            member_ids = [member["id"] for member in members]
+            filtered_users = [user for user in users if user["id"] in member_ids]
+            for user in filtered_users:
+                user["group"] = group
+        return users
+
+    @classmethod
+    def _get_level(cls, group):
+        """Gets the level from the group, defaulting to 0 if not valid."""
+        # Safely retrieve the level attribute and default to 0 if not valid
+        level_str = group.get("attributes", {}).get("level", [0])[0]
+        try:
+            return int(level_str)
+        except (ValueError, TypeError):
+            return 0
 
     @classmethod
     def update_user_group(cls, user_id, user_data):

@@ -21,7 +21,7 @@ from auth_api.services.user_service import UserService
 from auth_api.utils.util import cors_preflight
 from auth_api.schemas.user import UserSchema, UserRequestSchema
 from auth_api.schemas.response.user_group_response import UserGroupResponseSchema
-from auth_api.exceptions import ResourceNotFoundError, BusinessError
+from auth_api.exceptions import ResourceNotFoundError, BusinessError, UnprocessableEntityError, BadRequestError
 from auth_api.auth import auth
 from .apihelper import Api as ApiHelper
 from ..utils.roles import Role
@@ -49,10 +49,17 @@ class Users(Resource):
     @staticmethod
     @API.response(code=200, description="Success", model=[user_list_model])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all users")
+    @API.response(400, "Bad Request")
+    @API.response(404, "Not Found")
     @auth.require
     def get():
         """Fetch all users."""
-        users = UserService.get_all_users()
+        app_name = request.args.get('app_name', None)
+
+        if app_name is None:
+            return BadRequestError('Users must be fetched for App')
+
+        users = UserService.get_all_users(app_name)
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
 
