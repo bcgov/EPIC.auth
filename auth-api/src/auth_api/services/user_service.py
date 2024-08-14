@@ -1,14 +1,16 @@
 """Service for user management."""
 from auth_api.models.user import User as UserModel
 from .keycloak import KeycloakService
+from flask import g
 
 
 class UserService:
     """User management service."""
 
     @classmethod
-    def get_user_by_id(cls, user_id, app_name=None):
+    def get_user_by_id(cls, user_id):
         """Get user by id."""
+        app_name = g.app_name
         user = KeycloakService.get_user_by_id(user_id)
 
         user_groups = KeycloakService.get_user_groups(user.get('id'))
@@ -21,9 +23,10 @@ class UserService:
         return user
 
     @classmethod
-    def get_all_users(cls, app_name=None):
+    def get_all_users(cls):
         """Get all users, optionally filtered by app name."""
         users = KeycloakService.get_users()
+        app_name = g.app_name
         groups = sorted(UserService.get_groups(), key=UserService._get_level)
 
         app_groups = [group for group in groups if
@@ -56,7 +59,7 @@ class UserService:
     @classmethod
     def update_user_group(cls, user_id, user_data):
         """Update users group."""
-        app_name = user_data.get('app_name')
+        app_name = g.app_name
         group_name = user_data.get('group_name')
         path = f"/{app_name}/{group_name}" if app_name else group_name
         all_groups = cls.get_groups()

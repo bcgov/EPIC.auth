@@ -54,9 +54,8 @@ class Users(Resource):
     @auth.require
     def get():
         """Fetch all users."""
-        app_name = request.args.get('app_name', None)
 
-        users = UserService.get_all_users(app_name)
+        users = UserService.get_all_users()
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
 
@@ -74,8 +73,7 @@ class User(Resource):
     @API.response(404, "Not Found")
     def get(user_id):
         """Fetch a user by id."""
-        app_name = request.args.get('app_name', None)
-        user = UserService.get_user_by_id(user_id, app_name)
+        user = UserService.get_user_by_id(user_id)
         if not user:
             raise ResourceNotFoundError(f"User with {user_id} not found")
         return UserSchema().dump(user), HTTPStatus.OK
