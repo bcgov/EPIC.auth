@@ -12,22 +12,22 @@ class UserService:
         return KeycloakService.get_user_by_id(user_id)
 
     @classmethod
-    def get_all_users(cls, app_name):
-        """Get all users"""
+    def get_all_users(cls, app_name=None):
+        """Get all users, optionally filtered by app name."""
         users = KeycloakService.get_users()
-        for user in users:
-            user["group"] = None
-        groups = UserService.get_groups()
-        groups = sorted(groups, key=UserService._get_level)
-        app_groups = [group for group in groups if app_name.lower() in group.get("path", "").lower()]
+        groups = sorted(UserService.get_groups(), key=UserService._get_level)
+
+        app_groups = [group for group in groups if
+                      app_name.lower() in group.get("path", "").lower()] if app_name else groups
 
         for group in app_groups:
             members = KeycloakService.get_group_members(group["id"])
-            member_ids = [member["id"] for member in members]
-            filtered_users = [user for user in users if user["id"] in member_ids]
-            for user in filtered_users:
-                user["group"] = group
-        return users
+            member_ids = {member["id"] for member in members}
+            for user in users:
+                if user["id"] in member_ids:
+                    user["group"] = group
+
+        return [user for user in users if user.get("group")] if app_name else users
 
     @classmethod
     def _get_level(cls, group):

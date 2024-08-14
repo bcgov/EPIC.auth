@@ -56,9 +56,6 @@ class Users(Resource):
         """Fetch all users."""
         app_name = request.args.get('app_name', None)
 
-        if app_name is None:
-            return BadRequestError('Users must be fetched for App')
-
         users = UserService.get_all_users(app_name)
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
