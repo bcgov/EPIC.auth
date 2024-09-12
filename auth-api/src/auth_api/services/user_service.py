@@ -1,4 +1,5 @@
 """Service for user management."""
+
 from auth_api.models.user import User as UserModel
 from .keycloak import KeycloakService
 from flask import g
@@ -13,10 +14,17 @@ class UserService:
         app_name = g.app_name
         user = KeycloakService.get_user_by_id(user_id)
 
-        user_groups = KeycloakService.get_user_groups(user.get('id'))
+        user_groups = KeycloakService.get_user_groups(user.get("id"))
 
-        app_groups = [group for group in user_groups if
-                      app_name.lower() in group.get("path", "").lower()] if app_name else user_groups
+        app_groups = (
+            [
+                group
+                for group in user_groups
+                if app_name.lower() in group.get("path", "").lower()
+            ]
+            if app_name
+            else user_groups
+        )
 
         # Add groups to user data
         user["groups"] = app_groups
@@ -29,8 +37,15 @@ class UserService:
         app_name = g.app_name
         groups = sorted(UserService.get_groups(), key=UserService._get_level)
 
-        app_groups = [group for group in groups if
-                      app_name.lower() in group.get("path", "").lower()] if app_name else groups
+        app_groups = (
+            [
+                group
+                for group in groups
+                if app_name.lower() in group.get("path", "").lower()
+            ]
+            if app_name
+            else groups
+        )
 
         # Create a dictionary to map group IDs to members
         group_members = {}
@@ -41,7 +56,11 @@ class UserService:
 
         # Map users to their groups
         for user in users:
-            user["groups"] = [group for group in app_groups if user["id"] in group_members.get(group["id"], set())]
+            user["groups"] = [
+                group
+                for group in app_groups
+                if user["id"] in group_members.get(group["id"], set())
+            ]
 
         # Return only users with at least one group if filtered by app_name
         return [user for user in users if user["groups"]] if app_name else users
@@ -60,16 +79,31 @@ class UserService:
     def update_user_group(cls, user_id, user_data):
         """Update users group."""
         app_name = g.app_name
-        group_name = user_data.get('group_name')
+        group_name = user_data.get("group_name")
         path = f"/{app_name}/{group_name}" if app_name else group_name
         all_groups = cls.get_groups()
+        parent_group = next(
+            (group for group in all_groups if group["name"] == app_name), None
+        )
         group = next(
-            (group for group in all_groups if group['name'] == group_name and group['path'] == path),
-            None
+            (
+                group
+                for group in all_groups
+                if group["name"] == group_name and group["path"] == path
+            ),
+            None,
         )
-        result = KeycloakService.update_user_group(
-            user_id, group["id"]
-        )
+        result = KeycloakService.update_user_group(user_id, group["id"])
+        all_groups_except_new_group = [
+            cgroup
+            for cgroup in all_groups
+            if "parentId" in cgroup
+            and cgroup["parentId"] == parent_group["id"]
+            and cgroup["id"] != group["id"]
+        ]
+        if len(all_groups_except_new_group) > 0:
+            for del_group in all_groups_except_new_group:
+                KeycloakService.delete_user_group(user_id, del_group["id"])
         return result
 
     @classmethod
@@ -80,8 +114,9 @@ class UserService:
 
         for group in groups:
             all_groups.append(group)
-            if group.get("subGroups"):
-                all_groups.extend(group["subGroups"])
+            if group.get("subGroupCount", 0) > 0:
+                sub_groups = KeycloakService.get_sub_groups(group["id"])
+                all_groups.extend(sub_groups)
 
         return all_groups
 
