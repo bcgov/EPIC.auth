@@ -98,7 +98,8 @@ class KeycloakService:
     @staticmethod
     def delete_user_group(user_id, group_id):
         """Delete user-group mapping"""
-        return KeycloakService._request_keycloak(f'users/{user_id}/groups/{group_id}', HttpMethod.DELETE)
+        kc_user_id = KeycloakService.get_user_by_id(user_id)['id']
+        return KeycloakService._request_keycloak(f'users/{kc_user_id}/groups/{group_id}', HttpMethod.DELETE)
 
     @staticmethod
     def _request_keycloak(relative_url, http_method: HttpMethod = HttpMethod.GET, data=None):
@@ -128,6 +129,11 @@ class KeycloakService:
         response = KeycloakService._request_keycloak(f'users/{user_id}/groups')
         return response.json()
 
+    @staticmethod
+    def get_sub_groups(group_id):
+        """Return the subgroups of given group"""
+        response = KeycloakService._request_keycloak(f"groups/{group_id}/children")
+        return response.json()
 
     @staticmethod
     def _get_admin_token():
