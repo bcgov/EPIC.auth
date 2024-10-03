@@ -1,6 +1,6 @@
 apiVersion: v2
-name: scaffold-web
-description: Helm chart for scaffold-web
+name: auth-web
+description: Helm chart for auth-web
 
 # A chart can be either an 'application' or a 'library' chart.
 #
