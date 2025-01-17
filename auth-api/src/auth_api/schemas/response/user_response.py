@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""User response schema"""
+"""User response schema."""
 from marshmallow import Schema, fields
 
 
 class UserResponseSchema(Schema):
-    """User response schema"""
+    """User response schema."""
 
     id = fields.Str(metadata={"description": "Id of the user"})
 
@@ -31,4 +31,3 @@ class UserResponseSchema(Schema):
     email = fields.Str(
         metadata={"description": "Email of the user"},
     )
-
