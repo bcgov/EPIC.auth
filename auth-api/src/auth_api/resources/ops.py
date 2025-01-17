@@ -14,6 +14,7 @@
 """Endpoints to check and manage the health of the service."""
 from flask_restx import Namespace, Resource
 
+
 API = Namespace('OPS', description='Service - OPS checks')
 
 

@@ -23,11 +23,10 @@ That are used to expose operational health information about the service, and me
 
 from flask import Blueprint
 
-
 from .apihelper import Api
-
-from .user import API as USER_API
 from .ops import API as OPS_API
+from .user import API as USER_API
+
 
 __all__ = ('API_BLUEPRINT',)
 

@@ -16,10 +16,10 @@ from enum import Enum
 
 
 class HttpMethod(Enum):
-    """Http methods"""
+    """Http methods."""
 
-    GET = 'GET'
-    PUT = 'PUT'
-    POST = 'POST'
-    PATCH = 'PATCH'
-    DELETE = 'DELETE'
+    GET = "GET"
+    PUT = "PUT"
+    POST = "POST"
+    PATCH = "PATCH"
+    DELETE = "DELETE"

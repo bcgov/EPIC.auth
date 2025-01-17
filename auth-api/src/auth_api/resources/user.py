@@ -15,16 +15,18 @@
 
 from http import HTTPStatus
 
-from flask import jsonify, request
+from flask import request
 from flask_restx import Namespace, Resource
+
+from auth_api.auth import auth
+from auth_api.exceptions import BusinessError, ResourceNotFoundError
+from auth_api.schemas.response.user_group_response import UserGroupResponseSchema
+from auth_api.schemas.user import UserRequestSchema, UserSchema
 from auth_api.services.user_service import UserService
 from auth_api.utils.util import cors_preflight
-from auth_api.schemas.user import UserSchema, UserRequestSchema
-from auth_api.schemas.response.user_group_response import UserGroupResponseSchema
-from auth_api.exceptions import ResourceNotFoundError, BusinessError, UnprocessableEntityError, BadRequestError
-from auth_api.auth import auth
+
 from .apihelper import Api as ApiHelper
-from ..utils.roles import Role
+
 
 API = Namespace("users", description="Endpoints for User Management")
 """Custom exception messages
@@ -54,7 +56,6 @@ class Users(Resource):
     @auth.require
     def get():
         """Fetch all users."""
-
         users = UserService.get_all_users()
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
@@ -64,7 +65,7 @@ class Users(Resource):
 @API.route("/<user_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
 @API.doc(params={"user_id": "The user identifier"})
 class User(Resource):
-    """Resource for managing a single user"""
+    """Resource for managing a single user."""
 
     @staticmethod
     @auth.require
@@ -110,7 +111,7 @@ class User(Resource):
 @API.route("/<user_id>/groups", methods=["GET", "OPTIONS", "PUT"])
 @API.doc(params={"user_id": "The user identifier"})
 class UserGroups(Resource):
-    """Resource for managing user groups"""
+    """Resource for managing user groups."""
 
     @staticmethod
     @auth.require
@@ -126,25 +127,55 @@ class UserGroups(Resource):
     @staticmethod
     @auth.require
     def put(user_id):
-        """Update the group of the user"""
-
+        """Update the group of the user."""
         response = UserService.update_user_group(user_id, API.payload)
         if response.status_code == 204:
-            return '', HTTPStatus.NO_CONTENT
-        raise BusinessError('Update failed', 500)
+            return "", HTTPStatus.NO_CONTENT
+        raise BusinessError("Update failed", 500)
+
+
+@cors_preflight("OPTIONS, DELETE")
+@API.route("/<user_id>/groups/<string:group_name>", methods=["OPTIONS", "DELETE"])
+@API.doc(params={"user_id": "The user identifier", "group_name": "Name of the group"})
+@API.doc(
+    params={
+        "del_sub_group_mappings": {
+            "description": "Delete all the sub group mappings of the given parent group",
+            "type": "boolean",
+            "required": False,
+        }
+    }
+)
+class UserGroupName(Resource):
+    """Resource to manage UserGroup by name."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Delete the user-group mapping"
+    )
+    @API.response(404, "Not Found")
+    @API.response(204, "No Content")
+    def delete(user_id, group_name):
+        """Delete the user group mapping by the group name."""
+        del_sub_group_mappings = bool(request.args.get("del_sub_group_mappings", False))
+        UserService.delete_user_group(user_id, group_name, del_sub_group_mappings)
+        return {}, HTTPStatus.NO_CONTENT
 
 
 @cors_preflight("GET")
 @API.route("/groups", methods=["GET", "OPTIONS"])
 class Groups(Resource):
-    """Group resource"""
+    """Group resource."""
 
     @staticmethod
     @auth.require
-    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all groups in keyclaok")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch all groups in keyclaok"
+    )
     @API.response(code=200, model=group_list_model, description="Groups List")
     @API.response(404, "Not Found")
     def get():
-        """Get all groups"""
+        """Get all groups."""
         reponse_schema = UserGroupResponseSchema(many=True)
         return reponse_schema.dump(UserService.get_groups()), HTTPStatus.OK
