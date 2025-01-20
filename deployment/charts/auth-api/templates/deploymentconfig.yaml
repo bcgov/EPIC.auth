@@ -16,32 +16,6 @@ spec:
       maxUnavailable: 25%
       timeoutSeconds: 600
       updatePeriodSeconds: 1
-      pre:
-        failurePolicy: Abort
-        execNewPod:
-          command:
-            - /opt/app-root/pre-hook-update-db.sh
-          env:
-            - name: DATABASE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.secret }}
-                  key: app-db-name
-            - name: DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.secret }}
-                  key: app-db-password
-            - name: DATABASE_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.secret }}
-                  key: app-db-username
-            - name: DATABASE_HOST
-              value: {{ .Values.database.service.name }}
-            - name: DATABASE_PORT
-              value: "{{ .Values.database.service.port }}"
-          containerName: {{ .Chart.Name }}
     type: Rolling
   template:
     metadata:
@@ -58,7 +32,7 @@ spec:
               memory: {{ .Values.resources.memory.request }}
           readinessProbe:
             httpGet:
-              path: /ops/readyz
+              path: /api/readyz
               port: 8080
               scheme: HTTP
             timeoutSeconds: 10
@@ -69,7 +43,7 @@ spec:
           name: {{ .Chart.Name }}
           livenessProbe:
             httpGet:
-              path: /ops/healthz
+              path: /api/healthz
               port: 8080
               scheme: HTTP
             timeoutSeconds: 1
@@ -77,25 +51,6 @@ spec:
             successThreshold: 1
             failureThreshold: 3
           env:
-            - name: DATABASE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.secret }}
-                  key: app-db-username
-            - name: DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.secret }}
-                  key: app-db-password
-            - name: DATABASE_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.secret }}
-                  key: app-db-name
-            - name: DATABASE_HOST
-              value: {{ .Values.database.service.name }}
-            - name: DATABASE_PORT
-              value: "{{ .Values.database.service.port }}"
             - name: JWT_OIDC_ALGORITHMS
               valueFrom:
                 configMapKeyRef:

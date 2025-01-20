@@ -9,7 +9,7 @@ resources:
     limit: 4Gi
 repository:
   ref: develop
-  url: https://github.com/bcgov/EPIC.scaffold.git
+  url: https://github.com/bcgov/EPIC.auth.git
 context:
-  dir: /scaffold-web
+  dir: /auth-web
 
