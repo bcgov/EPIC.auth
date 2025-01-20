@@ -16,8 +16,10 @@
 to support swagger on http
 """
 from functools import wraps
+
 from flask import url_for
-from flask_restx import Api as BaseApi, fields
+from flask_restx import Api as BaseApi
+from flask_restx import fields
 from flask_restx.apidoc import apidoc
 from marshmallow import fields as ma_fields
 
@@ -33,7 +35,7 @@ class Api(BaseApi):
 
     @classmethod
     def swagger_decorators(cls, api, endpoint_description):
-        """Common decorators for the resources"""
+        """Set common decorator."""
 
         def decorator(func):
             @wraps(func)
@@ -50,7 +52,7 @@ class Api(BaseApi):
     @classmethod
     def convert_ma_schema_to_restx_model(cls, api, schema, name):
         """
-        Converts a Marshmallow schema to a Flask-RESTX model.
+        Convert a Marshmallow schema to a Flask-RESTX model.
 
         :param api: The Flask-RESTX API instance
         :param schema: The Marshmallow schema instance
@@ -77,6 +79,7 @@ class Api(BaseApi):
             # Add more field types as needed
 
         return api.model(name, model_fields)
+
 
 # Make a global change setting the URL prefix for the swaggerui at the module level
 # This solves the issue where the swaggerui does not pick up the url prefix

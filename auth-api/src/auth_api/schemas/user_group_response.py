@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""User group response schema"""
+"""User group response schema."""
 from marshmallow import Schema, fields
 
 
 class UserGroupResponseSchema(Schema):
-    """User group response schema"""
+    """User group response schema."""
 
     id = fields.Str(metadata={"description": "Id of the group"})
     name = fields.Str(metadata={"description": "Name of the group"})
@@ -34,7 +34,7 @@ class UserGroupResponseSchema(Schema):
         return instance.get("attributes", {}).get("display_name", [""])[0] or ""
 
     def get_path(self, instance):
-        """Format the path of the group from keycloak"""
+        """Format the path of the group from keycloak."""
         if isinstance(instance, dict):
             path = instance.get("path", "")
             return path[1:] if path else None

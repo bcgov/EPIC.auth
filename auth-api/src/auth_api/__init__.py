@@ -4,8 +4,8 @@ This module is for the initiation of the flask app.
 """
 
 import os
-
 from http import HTTPStatus
+
 import secure
 from flask import Flask, current_app, g, request
 from flask_cors import CORS
@@ -15,6 +15,7 @@ from auth_api.config import get_named_config
 from auth_api.models import db, ma, migrate
 from auth_api.utils.cache import cache
 from auth_api.utils.util import allowedorigins
+
 
 # Security Response headers
 csp = (
@@ -39,9 +40,7 @@ secure_headers = secure.Secure(
 def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     """Create flask app."""
     # pylint: disable=import-outside-toplevel
-    from auth_api.resources import (
-        API_BLUEPRINT,
-    )
+    from auth_api.resources import API_BLUEPRINT
 
     # Flask app initialize
     app = Flask(__name__)

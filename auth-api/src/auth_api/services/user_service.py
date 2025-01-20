@@ -1,8 +1,11 @@
 """Service for user management."""
 
-from auth_api.models.user import User as UserModel
-from .keycloak import KeycloakService
 from flask import g
+
+from auth_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
+from auth_api.models.user import User as UserModel
+
+from .keycloak import KeycloakService
 
 
 class UserService:
@@ -67,7 +70,7 @@ class UserService:
 
     @classmethod
     def _get_level(cls, group):
-        """Gets the level from the group, defaulting to 0 if not valid."""
+        """Get the level from the group, defaulting to 0 if not valid."""
         # Safely retrieve the level attribute and default to 0 if not valid
         level_str = group.get("attributes", {}).get("level", [0])[0]
         try:
@@ -107,8 +110,44 @@ class UserService:
         return result
 
     @classmethod
+    def delete_user_group(cls, user_id, group_name, del_sub_group_mappings):
+        """Delete the user-group mapping in keycloak."""
+        app_name = g.app_name
+        if app_name == group_name:
+            path = f"/{app_name}"
+        else:
+            path = f"/{app_name}/{group_name}" if app_name else group_name
+        all_groups = cls.get_groups()
+        group = next(
+            (
+                group
+                for group in all_groups
+                if group["name"] == group_name and group["path"] == path
+            ),
+            None,
+        )
+        if not group:
+            raise ResourceNotFoundError("Group doesn't exist with the given name")
+        if group.get("subGroupCount", 0) > 0:
+            if del_sub_group_mappings is False:
+                raise UnprocessableEntityError(
+                    "The requested action will delete all the subgroup mappings of the"
+                    "given parent. Please pass 'del_sub_group_mappings' as 'true' if you want to proceed."
+                )
+            mapped_groups = cls.get_groups_by_user_id(user_id)
+            mapped_sub_groups = [
+                mapped
+                for mapped in mapped_groups
+                if mapped.get("parentId", None) == group["id"]
+            ]
+            for mapped in mapped_sub_groups:
+                KeycloakService.delete_user_group(user_id, mapped["id"])
+        else:
+            KeycloakService.delete_user_group(user_id, group["id"])
+
+    @classmethod
     def get_groups(cls):
-        """Get groups that has "level" attribute set up"""
+        """Get groups that has "level" attribute set up."""
         groups = KeycloakService.get_groups()
         all_groups = []
 
