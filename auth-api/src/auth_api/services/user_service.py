@@ -17,7 +17,7 @@ class UserService:
         app_name = g.app_name
         user = KeycloakService.get_user_by_id(user_id)
 
-        user_groups = KeycloakService.get_user_groups(user.get("id"))
+        user_groups = KeycloakService.get_user_groups(user_id)
 
         app_groups = (
             [
