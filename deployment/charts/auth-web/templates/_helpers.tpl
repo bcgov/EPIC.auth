@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "scaffold-web.name" -}}
+{{- define "auth-web.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "scaffold-web.fullname" -}}
+{{- define "auth-web.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "scaffold-web.chart" -}}
+{{- define "auth-web.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "scaffold-web.labels" -}}
-helm.sh/chart: {{ include "scaffold-web.chart" . }}
-{{ include "scaffold-web.selectorLabels" . }}
+{{- define "auth-web.labels" -}}
+helm.sh/chart: {{ include "auth-web.chart" . }}
+{{ include "auth-web.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "scaffold-web.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "scaffold-web.name" . }}
+{{- define "auth-web.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "auth-web.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "scaffold-web.serviceAccountName" -}}
+{{- define "auth-web.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "scaffold-web.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "auth-web.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

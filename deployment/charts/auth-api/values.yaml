@@ -1,10 +1,11 @@
 replicaCount: 1
 
 image:
-  repository: scaffold-api
+  repository: image-registry.openshift-image-registry.svc:5000/c72cba-tools/auth-api  
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "dev"
+  tag: "test"
+  namespace: c8b80a-tools
 
 resources:
   cpu:
@@ -15,9 +16,9 @@ resources:
     request: 256Mi
 
 database:
-  secret: scaffold-patroni
+  secret: auth-patroni
   service:
-    name: scaffold-patroni
+    name: auth-patroni
     port: 5432
 
 
@@ -30,14 +31,14 @@ service:
 auth:
   jwt:
     alg: RS256
-    aud: scaffold-web
+    aud: auth-web
     cacheEnabled: true
     issuer: https://test.loginproxy.gov.bc.ca/auth/realms/eao-epic
     cacheTimeout: "300"
     wellKnownConfig: https://test.loginproxy.gov.bc.ca/auth/realms/eao-epic/.well-known/openid-configuration
   keycloak:
     uri: https://test.loginproxy.gov.bc.ca
-    realm:
+    realm: eao-epic
     adminClientId:
     adminClientSecret:
 python:
@@ -46,5 +47,5 @@ python:
 cdogs:  
   tokenEndpoint: https://test.loginproxy.gov.bc.ca/auth/realms/comsvcauth/protocol/openid-connect/token
   apiEndpoint: https://cdogs-test.api.gov.bc.ca/api/v2
-  clientId:
-  clientSecret:
+  clientId: epic-admin
+  clientSecret: Gr1oOpK13kkmmyK75cowoZastlnH9MN6

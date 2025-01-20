@@ -1,7 +1,7 @@
 app:
-  name: scaffold
-  url: scaffold-web-{{ .Release.Namespace }}.apps.gold.devops.gov.bc.ca
-  api: https://scaffold-api-{{ .Release.Namespace }}.apps.gold.devops.gov.bc.ca
+  name: auth
+  url: auth-web-{{ .Release.Namespace }}.apps.gold.devops.gov.bc.ca
+  api: https://auth-api-{{ .Release.Namespace }}.apps.gold.devops.gov.bc.ca
   env: dev
 resources:
   cpu:
@@ -11,13 +11,13 @@ resources:
     limit: 200Mi
     request: 100Mi
 image:
-  name: scaffold-web
+  name: auth-web
   tag: latest
   repository: image-registry.openshift-image-registry.svc:5000/c72cba-tools/
 keycloak:
   url: "https://dev.loginproxy.gov.bc.ca"
   realm: eao-epic
-  client: scaffold-web
+  client: auth-web
 service:
   port: 8080
 replicas:
