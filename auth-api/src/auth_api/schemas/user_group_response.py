@@ -26,8 +26,8 @@ class UserGroupResponseSchema(Schema):
     display_name = fields.Method("get_display_name")
 
     def get_level(self, instance):
-        """Get the level, defaulting to 0 if not present or invalid."""
-        return int(instance.get("attributes", {}).get("level", [0])[0] or 0)
+        """Get the level, defaulting to -1 if not present or invalid."""
+        return int(instance.get("attributes", {}).get("level", [0])[0] or -1)
 
     def get_display_name(self, instance):
         """Get the display name, defaulting to an empty string if not present."""
