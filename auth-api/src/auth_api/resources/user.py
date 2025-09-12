@@ -15,7 +15,7 @@
 
 from http import HTTPStatus
 
-from flask import request
+from flask import request, current_app
 from flask_restx import Namespace, Resource
 
 from auth_api.auth import auth
@@ -167,8 +167,8 @@ class UserGroupName(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET")
-@API.route("/groups/<group_name>", methods=["GET", "OPTIONS"])
+@cors_preflight("GET, ""OPTIONS")
+@API.route("/groups/<group_name>/members", methods=["GET", "OPTIONS"])
 class GroupMembers(Resource):
     """Group resource."""
 
@@ -180,9 +180,10 @@ class GroupMembers(Resource):
     @API.response(404, "Not Found")
     def get(group_name):
         """Get group members by name."""
-        group_data = GetGroupByNameRequest().load(API.payload)
-        if group_name != group_data.get("group_name"):
-            raise BusinessError("Group name in the path and body must be the same", HTTPStatus.BAD_REQUEST)
+        sub_group_name = request.args.get("sub_group_name", None)
+        group_data = GetGroupByNameRequest().load(
+            {"group_name": group_name, "sub_group_name": sub_group_name}
+        )
         response_schema = UserResponseSchema(many=True)
         members = UserService.get_group_members(group_data)
         return response_schema.dump(members), HTTPStatus.OK
