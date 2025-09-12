@@ -73,12 +73,6 @@ class KeycloakService:
         return groups
 
     @staticmethod
-    def get_members_for_group(group_id):
-        """Get the members of a group."""
-        response = KeycloakService._request_keycloak(f"groups/{group_id}/members")
-        return response.json()
-
-    @staticmethod
     def get_group_members(group_id):
         """Get the members of a group."""
         response = KeycloakService._request_keycloak(f"groups/{group_id}/members")

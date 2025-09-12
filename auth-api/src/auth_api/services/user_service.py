@@ -188,15 +188,6 @@ class UserService:
         return user
 
     @classmethod
-    def get_group_by_name(cls, group_name, sub_group_name=None):
-        """Get the group by its name."""
-        groups = KeycloakService.get_groups(brief_representation=True)
-        for group in groups:
-            if group["name"] == group_name:
-                return group
-        raise ResourceNotFoundError(f"Group with name '{group_name}' not found.")
-
-    @classmethod
     def get_group_members(cls, group_data):
         """Get the members of a group by its name."""
         current_app.logger.debug("Fetching group members with data: %s", group_data)
