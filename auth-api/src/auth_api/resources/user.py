@@ -20,13 +20,14 @@ from flask_restx import Namespace, Resource
 
 from auth_api.auth import auth
 from auth_api.exceptions import BusinessError, ResourceNotFoundError
+from auth_api.schemas.response.user_response import UserResponseSchema
 from auth_api.schemas.response.user_group_response import UserGroupResponseSchema
+from auth_api.schemas.request.get_group_members import GetGroupByNameRequest
 from auth_api.schemas.user import UserRequestSchema, UserSchema
 from auth_api.services.user_service import UserService
 from auth_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
-
 
 API = Namespace("users", description="Endpoints for User Management")
 """Custom exception messages
@@ -40,6 +41,9 @@ user_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 group_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, UserGroupResponseSchema(), "UserListItem"
+)
+user_response_list_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, UserResponseSchema(), "UserResponseList"
 )
 
 
@@ -164,18 +168,21 @@ class UserGroupName(Resource):
 
 
 @cors_preflight("GET")
-@API.route("/groups", methods=["GET", "OPTIONS"])
-class Groups(Resource):
+@API.route("/groups/<group_name>", methods=["GET", "OPTIONS"])
+class GroupMembers(Resource):
     """Group resource."""
 
     @staticmethod
-    @auth.require
     @ApiHelper.swagger_decorators(
-        API, endpoint_description="Fetch all groups in keyclaok"
+        API, endpoint_description="Fetch all members of a group"
     )
-    @API.response(code=200, model=group_list_model, description="Groups List")
+    @API.response(code=200, model=user_response_list_model, description="Group Members List")
     @API.response(404, "Not Found")
-    def get():
-        """Get all groups."""
-        reponse_schema = UserGroupResponseSchema(many=True)
-        return reponse_schema.dump(UserService.get_groups()), HTTPStatus.OK
+    def get(group_name):
+        """Get group members by name."""
+        group_data = GetGroupByNameRequest().load(API.payload)
+        if group_name != group_data.get("group_name"):
+            raise BusinessError("Group name in the path and body must be the same", HTTPStatus.BAD_REQUEST)
+        response_schema = UserResponseSchema(many=True)
+        members = UserService.get_group_members(group_data)
+        return response_schema.dump(members), HTTPStatus.OK

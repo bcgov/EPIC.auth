@@ -101,8 +101,8 @@ class UserService:
             cgroup
             for cgroup in all_groups
             if "parentId" in cgroup
-            and cgroup["parentId"] == parent_group["id"]
-            and cgroup["id"] != group["id"]
+               and cgroup["parentId"] == parent_group["id"]
+               and cgroup["id"] != group["id"]
         ]
         if len(all_groups_except_new_group) > 0:
             for del_group in all_groups_except_new_group:
@@ -186,3 +186,43 @@ class UserService:
 
         user.delete()
         return user
+
+    @classmethod
+    def get_group_by_name(cls, group_name, sub_group_name=None):
+        """Get the group by its name."""
+        groups = KeycloakService.get_groups(brief_representation=True)
+        for group in groups:
+            if group["name"] == group_name:
+                return group
+        raise ResourceNotFoundError(f"Group with name '{group_name}' not found.")
+
+    @classmethod
+    def get_group_members(cls, group_data):
+        """Get the members of a group by its name."""
+        group_name = group_data.get("group_name")
+        sub_group_name = group_data.get("sub_group_name")
+        group = KeycloakService.get_group_by_name(group_name, sub_group_name)
+
+        if not group:
+            raise ResourceNotFoundError(f"Group with name '{group_name}' not found.")
+
+        if sub_group_name:
+            group = next(
+                (
+                    sub_group
+                    for sub_group in group.get('subGroups', [])
+                    if sub_group.get("name") == sub_group_name
+                ),
+                None,
+            )
+            if not group:
+                raise ResourceNotFoundError(
+                    f"Sub-group with name '{sub_group_name}' not found in group '{group_name}'."
+                )
+
+        group_id = group.get("id")
+        if not group_id:
+            raise UnprocessableEntityError("Group ID is missing or invalid.")
+
+        members = KeycloakService.get_group_members(group_id)
+        return members
