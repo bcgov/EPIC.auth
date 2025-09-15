@@ -73,12 +73,6 @@ class KeycloakService:
         return groups
 
     @staticmethod
-    def get_members_for_group(group_id):
-        """Get the members of a group."""
-        response = KeycloakService._request_keycloak(f"groups/{group_id}/members")
-        return response.json()
-
-    @staticmethod
     def get_group_members(group_id):
         """Get the members of a group."""
         response = KeycloakService._request_keycloak(f"groups/{group_id}/members")
@@ -166,3 +160,16 @@ class KeycloakService:
             timeout=timeout,
         )
         return response.json().get("access_token")
+
+    @staticmethod
+    def get_group_by_name(group_name, sub_group_name=None):
+        """Get group by its name."""
+        request_url = "groups"
+        if sub_group_name:
+            request_url += f"?search={sub_group_name}"
+        response = KeycloakService._request_keycloak(request_url)
+        groups = response.json()
+        for group in groups:
+            if group["name"] == group_name:
+                return group
+        raise ValueError(f"Group with name '{group_name}' not found.")

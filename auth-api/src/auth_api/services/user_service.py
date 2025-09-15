@@ -1,6 +1,6 @@
 """Service for user management."""
 
-from flask import g
+from flask import g, current_app
 
 from auth_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from auth_api.models.user import User as UserModel
@@ -101,8 +101,8 @@ class UserService:
             cgroup
             for cgroup in all_groups
             if "parentId" in cgroup
-            and cgroup["parentId"] == parent_group["id"]
-            and cgroup["id"] != group["id"]
+               and cgroup["parentId"] == parent_group["id"]
+               and cgroup["id"] != group["id"]
         ]
         if len(all_groups_except_new_group) > 0:
             for del_group in all_groups_except_new_group:
@@ -186,3 +186,45 @@ class UserService:
 
         user.delete()
         return user
+
+    @classmethod
+    def get_group_members(cls, group_data):
+        """Get the members of a group by its name."""
+        current_app.logger.debug("Fetching group members with data: %s", group_data)
+        group_name = group_data.get("group_name")
+        sub_group_name = group_data.get("sub_group_name")
+
+        current_app.logger.debug("Fetching group by name: %s, sub-group: %s", group_name, sub_group_name)
+        group = KeycloakService.get_group_by_name(group_name, sub_group_name)
+
+        if not group:
+            current_app.logger.error("Group with name '%s' not found.", group_name)
+            raise ResourceNotFoundError(f"Group with name '{group_name}' not found.")
+
+        if sub_group_name:
+            current_app.logger.debug("Searching for sub-group: %s in group: %s", sub_group_name, group_name)
+            group = next(
+                (
+                    sub_group
+                    for sub_group in group.get('subGroups', [])
+                    if sub_group.get("name") == sub_group_name
+                ),
+                None,
+            )
+            if not group:
+                current_app.logger.error(
+                    "Sub-group with name '%s' not found in group '%s'.", sub_group_name, group_name
+                )
+                raise ResourceNotFoundError(
+                    f"Sub-group with name '{sub_group_name}' not found in group '{group_name}'."
+                )
+
+        group_id = group.get("id")
+        if not group_id:
+            current_app.logger.error("Group ID is missing or invalid for group: %s", group_name)
+            raise UnprocessableEntityError("Group ID is missing or invalid.")
+
+        current_app.logger.debug("Fetching members for group ID: %s", group_id)
+        members = KeycloakService.get_group_members(group_id)
+        current_app.logger.debug("Fetched %d members for group ID: %s", len(members), group_id)
+        return members
