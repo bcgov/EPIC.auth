@@ -15,7 +15,7 @@
 
 from http import HTTPStatus
 
-from flask import request, current_app
+from flask import request
 from flask_restx import Namespace, Resource
 
 from auth_api.auth import auth
@@ -60,7 +60,8 @@ class Users(Resource):
     @auth.require
     def get():
         """Fetch all users."""
-        users = UserService.get_all_users()
+        include_groups = request.args.get("include_groups", "true").lower() == "true"
+        users = UserService.get_all_users(include_groups=include_groups)
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
 
@@ -178,6 +179,7 @@ class GroupMembers(Resource):
     )
     @API.response(code=200, model=user_response_list_model, description="Group Members List")
     @API.response(404, "Not Found")
+    @auth.require
     def get(group_name):
         """Get group members by name."""
         sub_group_name = request.args.get("sub_group_name", None)

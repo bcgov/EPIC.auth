@@ -34,39 +34,55 @@ class UserService:
         return user
 
     @classmethod
-    def get_all_users(cls):
-        """Get all users, optionally filtered by app name."""
+    def get_all_users(cls, include_groups: bool = True):
+        """Get all users, optionally filtered by app name and with optional group mapping."""
         users = KeycloakService.get_users()
-        app_name = g.app_name
-        groups = sorted(UserService.get_groups(), key=UserService._get_level)
+        if not include_groups:
+            return users
 
-        app_groups = (
-            [
-                group
-                for group in groups
-                if app_name.lower() in group.get("path", "").lower()
-            ]
-            if app_name
-            else groups
-        )
+        app_name = g.get("app_name", None)
+        groups = cls._get_relevant_groups(app_name)
 
-        # Create a dictionary to map group IDs to members
+        group_members_map = cls._map_group_members(groups)
+
+        cls._assign_groups_to_users(users, groups, group_members_map)
+
+        return cls._filter_users_by_group(users) if app_name else users
+
+    @classmethod
+    def _get_relevant_groups(cls, app_name: str):
+        """Return sorted groups, optionally filtered by app name."""
+        all_groups = cls.get_groups()
+        if app_name:
+            return sorted(
+                [group for group in all_groups if app_name.lower() in g.get("path", "").lower()],
+                key=cls._get_level
+            )
+        return sorted(all_groups, key=cls._get_level)
+
+    @classmethod
+    def _map_group_members(cls, groups):
+        """Return a mapping of group_id to set of user_ids."""
         group_members = {}
-        for group in app_groups:
+        for group in groups:
             members = KeycloakService.get_group_members(group["id"])
-            member_ids = {member["id"] for member in members}
-            group_members[group["id"]] = member_ids
+            group_members[group["id"]] = {m["id"] for m in members}
+        return group_members
 
-        # Map users to their groups
+    @classmethod
+    def _assign_groups_to_users(cls, users, groups, group_members_map):
+        """Mutate user objects by adding their group memberships."""
         for user in users:
             user["groups"] = [
                 group
-                for group in app_groups
-                if user["id"] in group_members.get(group["id"], set())
+                for group in groups
+                if user["id"] in group_members_map.get(group["id"], set())
             ]
 
-        # Return only users with at least one group if filtered by app_name
-        return [user for user in users if user["groups"]] if app_name else users
+    @classmethod
+    def _filter_users_by_group(cls, users):
+        """Return only users who belong to at least one group."""
+        return [user for user in users if user["groups"]]
 
     @classmethod
     def _get_level(cls, group):
