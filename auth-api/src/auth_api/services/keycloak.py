@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Keycloak admin functions."""
+from urllib.parse import urlencode
+
 import requests
 from flask import current_app
 
@@ -54,9 +56,18 @@ class KeycloakService:
         return users[0]
 
     @staticmethod
-    def get_users():
-        """Get users."""
-        response = KeycloakService._request_keycloak("users?max=2000")
+    def get_users(search_text: str = None):
+        """Return a list of users from Keycloak, optionally filtered by search term."""
+        max_users = 2000
+        query_params = {'max': max_users}
+
+        if search_text:
+            query_params['search'] = search_text
+
+        query_string = urlencode(query_params)
+        endpoint = f"users?{query_string}"
+
+        response = KeycloakService._request_keycloak(endpoint)
         return response.json()
 
     @staticmethod

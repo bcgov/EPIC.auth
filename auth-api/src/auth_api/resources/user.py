@@ -61,7 +61,8 @@ class Users(Resource):
     def get():
         """Fetch all users."""
         include_groups = request.args.get("include_groups", "true").lower() == "true"
-        users = UserService.get_all_users(include_groups=include_groups)
+        search_text = request.args.get("search", None)
+        users = UserService.get_all_users(include_groups=include_groups, search_text=search_text)
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
 

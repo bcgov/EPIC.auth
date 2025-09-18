@@ -34,9 +34,9 @@ class UserService:
         return user
 
     @classmethod
-    def get_all_users(cls, include_groups: bool = True):
+    def get_all_users(cls, include_groups: bool = True, search_text: str = None):
         """Get all users, optionally filtered by app name and with optional group mapping."""
-        users = KeycloakService.get_users()
+        users = KeycloakService.get_users(search_text)
         if not include_groups:
             return users
 
