@@ -44,7 +44,7 @@ class KeycloakService:
         return response.json()
 
     @staticmethod
-    def get_user_by_id(username):
+    def get_user_by_username(username):
         """Get users."""
         response = KeycloakService._request_keycloak(f"users?username={username}")
         users = response.json()
@@ -54,6 +54,18 @@ class KeycloakService:
 
         # Assuming usernames are unique, return the first user found
         return users[0]
+
+    @staticmethod
+    def get_user_by_id(user_id):
+        """Get users."""
+        response = KeycloakService._request_keycloak(f"users/{user_id}")
+        user = response.json()
+
+        if not user:
+            raise ValueError(f"User not found.")
+
+        # Assuming usernames are unique, return the first user found
+        return user
 
     @staticmethod
     def get_users(search_text: str = None):
@@ -101,7 +113,7 @@ class KeycloakService:
     @staticmethod
     def update_user_group(user_id, group_id):
         """Update the group of user."""
-        kc_user_id = KeycloakService.get_user_by_id(user_id)["id"]
+        kc_user_id = KeycloakService.get_user_by_username(user_id)["id"]
         return KeycloakService._request_keycloak(
             f"users/{kc_user_id}/groups/{group_id}", HttpMethod.PUT
         )
@@ -109,7 +121,7 @@ class KeycloakService:
     @staticmethod
     def delete_user_group(user_id, group_id):
         """Delete user-group mapping."""
-        kc_user_id = KeycloakService.get_user_by_id(user_id)["id"]
+        kc_user_id = KeycloakService.get_user_by_username(user_id)["id"]
         return KeycloakService._request_keycloak(
             f"users/{kc_user_id}/groups/{group_id}", HttpMethod.DELETE
         )
@@ -139,10 +151,11 @@ class KeycloakService:
         return response
 
     @staticmethod
-    def get_user_groups(user_id):
+    def get_user_groups_by_username(username, user_id=None, brief_representation=False):
         """Get groups directly associated with a specific user by their ID."""
-        kc_user_id = KeycloakService.get_user_by_id(user_id)["id"]
-        response = KeycloakService._request_keycloak(f"users/{kc_user_id}/groups")
+        if user_id:
+            user_id = KeycloakService.get_user_by_username(username)["id"]
+        response = KeycloakService._request_keycloak(f"users/{user_id}/groups?briefRepresentation={brief_representation}")
         return response.json()
 
     @staticmethod

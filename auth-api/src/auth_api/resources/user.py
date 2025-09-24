@@ -68,8 +68,8 @@ class Users(Resource):
 
 
 @cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<user_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
-@API.doc(params={"user_id": "The user identifier"})
+@API.route("/<username>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.doc(params={"username": "The user identifier"})
 class User(Resource):
     """Resource for managing a single user."""
 
@@ -78,11 +78,32 @@ class User(Resource):
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by id")
     @API.response(code=200, model=user_list_model, description="Success")
     @API.response(404, "Not Found")
-    def get(user_id):
-        """Fetch a user by id."""
-        user = UserService.get_user_by_id(user_id)
+    def get(username):
+        """Fetch a user by username."""
+        group_brief_representation = request.args.get("group_brief_representation", "false").lower() == "true"
+        user = UserService.get_user_by_username(username, group_brief_representation)
         if not user:
-            raise ResourceNotFoundError(f"User with {user_id} not found")
+            raise ResourceNotFoundError(f"User with {username} not found")
+        return UserSchema().dump(user), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS, PATCH, DELETE")
+@API.route("/guid/<user_auth_guid>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.doc(params={"username": "The user identifier"})
+class UserById(Resource):
+    """Resource for managing a single user."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by id")
+    @API.response(code=200, model=user_list_model, description="Success")
+    @API.response(404, "Not Found")
+    def get(user_auth_guid):
+        """Fetch a user by username."""
+        group_brief_representation = request.args.get("group_brief_representation", "false").lower() == "true"
+        user = UserService.get_user_by_id(user_auth_guid, group_brief_representation)
+        if not user:
+            raise ResourceNotFoundError(f"User {user_auth_guid} not found")
         return UserSchema().dump(user), HTTPStatus.OK
 
     @staticmethod
@@ -125,7 +146,7 @@ class UserGroups(Resource):
     @API.response(404, "Not Found")
     def get(user_id):
         """Fetch groups for a user by id."""
-        groups = UserService.get_groups_by_user_id(user_id)
+        groups = UserService.get_groups_by_username(user_id)
         if not groups:
             raise ResourceNotFoundError(f"No groups found for user with {user_id}")
         return UserGroupResponseSchema(many=True).dump(groups), HTTPStatus.OK
