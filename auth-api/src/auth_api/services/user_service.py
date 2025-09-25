@@ -12,13 +12,26 @@ class UserService:
     """User management service."""
 
     @classmethod
-    def get_user_by_id(cls, user_id):
-        """Get user by id."""
+    def get_user_by_id(cls, user_id, group_brief_representation=False):
+        """Get user by username."""
         app_name = g.app_name
         user = KeycloakService.get_user_by_id(user_id)
+        username = user.get("username")
+        enriched_user = cls.enrich_user_with_groups(app_name, group_brief_representation, user, user_id, username)
+        return enriched_user
 
-        user_groups = KeycloakService.get_user_groups(user_id)
+    @classmethod
+    def get_user_by_username(cls, username, group_brief_representation=False):
+        """Get user by username."""
+        app_name = g.app_name
+        user = KeycloakService.get_user_by_username(username)
+        user_id = user.get("id")
+        enriched_user = cls.enrich_user_with_groups(app_name, group_brief_representation, user, user_id, username)
+        return enriched_user
 
+    @classmethod
+    def enrich_user_with_groups(cls, app_name, group_brief_representation, user, user_id, username):
+        user_groups = KeycloakService.get_user_groups_by_username(username, user_id, group_brief_representation)
         app_groups = (
             [
                 group
@@ -28,7 +41,6 @@ class UserService:
             if app_name
             else user_groups
         )
-
         # Add groups to user data
         user["groups"] = app_groups
         return user
@@ -150,7 +162,7 @@ class UserService:
                     "The requested action will delete all the subgroup mappings of the"
                     "given parent. Please pass 'del_sub_group_mappings' as 'true' if you want to proceed."
                 )
-            mapped_groups = cls.get_groups_by_user_id(user_id)
+            mapped_groups = cls.get_groups_by_username(user_id)
             mapped_sub_groups = [
                 mapped
                 for mapped in mapped_groups
@@ -176,9 +188,9 @@ class UserService:
         return all_groups
 
     @classmethod
-    def get_groups_by_user_id(cls, user_id):
+    def get_groups_by_username(cls, username):
         """Get groups for a specific user by their ID."""
-        groups = KeycloakService.get_user_groups(user_id)
+        groups = KeycloakService.get_user_groups_by_username(username)
         return groups
 
     @classmethod
