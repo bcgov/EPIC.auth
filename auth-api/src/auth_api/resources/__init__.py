@@ -26,6 +26,7 @@ from flask import Blueprint
 from .apihelper import Api
 from .ops import API as OPS_API
 from .user import API as USER_API
+from .group import API as GROUP_API
 
 
 __all__ = ('API_BLUEPRINT',)
@@ -56,3 +57,4 @@ API.add_namespace(OPS_API, path="/")
 # HANDLER = ExceptionHandler(API)
 
 API.add_namespace(USER_API)
+API.add_namespace(GROUP_API)
