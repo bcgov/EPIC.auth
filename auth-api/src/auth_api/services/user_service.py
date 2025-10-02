@@ -67,7 +67,7 @@ class UserService:
         all_groups = cls.get_groups()
         if app_name:
             return sorted(
-                [group for group in all_groups if app_name.lower() in g.get("path", "").lower()],
+                [group for group in all_groups if app_name.lower() in group.get("path", "").lower()],
                 key=cls._get_level
             )
         return sorted(all_groups, key=cls._get_level)
