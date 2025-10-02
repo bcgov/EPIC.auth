@@ -1,6 +1,6 @@
 """Service for user management."""
 
-from flask import g
+from flask import g, current_app
 
 from auth_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from auth_api.models.user import User as UserModel
@@ -12,13 +12,26 @@ class UserService:
     """User management service."""
 
     @classmethod
-    def get_user_by_id(cls, user_id):
-        """Get user by id."""
+    def get_user_by_id(cls, user_id, group_brief_representation=False):
+        """Get user by username."""
         app_name = g.app_name
         user = KeycloakService.get_user_by_id(user_id)
+        username = user.get("username")
+        enriched_user = cls.enrich_user_with_groups(app_name, group_brief_representation, user, user_id, username)
+        return enriched_user
 
-        user_groups = KeycloakService.get_user_groups(user_id)
+    @classmethod
+    def get_user_by_username(cls, username, group_brief_representation=False):
+        """Get user by username."""
+        app_name = g.app_name
+        user = KeycloakService.get_user_by_username(username)
+        user_id = user.get("id")
+        enriched_user = cls.enrich_user_with_groups(app_name, group_brief_representation, user, user_id, username)
+        return enriched_user
 
+    @classmethod
+    def enrich_user_with_groups(cls, app_name, group_brief_representation, user, user_id, username):
+        user_groups = KeycloakService.get_user_groups_by_username(username, user_id, group_brief_representation)
         app_groups = (
             [
                 group
@@ -28,45 +41,60 @@ class UserService:
             if app_name
             else user_groups
         )
-
         # Add groups to user data
         user["groups"] = app_groups
         return user
 
     @classmethod
-    def get_all_users(cls):
-        """Get all users, optionally filtered by app name."""
-        users = KeycloakService.get_users()
-        app_name = g.app_name
-        groups = sorted(UserService.get_groups(), key=UserService._get_level)
+    def get_all_users(cls, include_groups: bool = True, search_text: str = None):
+        """Get all users, optionally filtered by app name and with optional group mapping."""
+        users = KeycloakService.get_users(search_text)
+        if not include_groups:
+            return users
 
-        app_groups = (
-            [
-                group
-                for group in groups
-                if app_name.lower() in group.get("path", "").lower()
-            ]
-            if app_name
-            else groups
-        )
+        app_name = g.get("app_name", None)
+        groups = cls._get_relevant_groups(app_name)
 
-        # Create a dictionary to map group IDs to members
+        group_members_map = cls._map_group_members(groups)
+
+        cls._assign_groups_to_users(users, groups, group_members_map)
+
+        return cls._filter_users_by_group(users) if app_name else users
+
+    @classmethod
+    def _get_relevant_groups(cls, app_name: str):
+        """Return sorted groups, optionally filtered by app name."""
+        all_groups = cls.get_groups()
+        if app_name:
+            return sorted(
+                [group for group in all_groups if app_name.lower() in g.get("path", "").lower()],
+                key=cls._get_level
+            )
+        return sorted(all_groups, key=cls._get_level)
+
+    @classmethod
+    def _map_group_members(cls, groups):
+        """Return a mapping of group_id to set of user_ids."""
         group_members = {}
-        for group in app_groups:
+        for group in groups:
             members = KeycloakService.get_group_members(group["id"])
-            member_ids = {member["id"] for member in members}
-            group_members[group["id"]] = member_ids
+            group_members[group["id"]] = {m["id"] for m in members}
+        return group_members
 
-        # Map users to their groups
+    @classmethod
+    def _assign_groups_to_users(cls, users, groups, group_members_map):
+        """Mutate user objects by adding their group memberships."""
         for user in users:
             user["groups"] = [
                 group
-                for group in app_groups
-                if user["id"] in group_members.get(group["id"], set())
+                for group in groups
+                if user["id"] in group_members_map.get(group["id"], set())
             ]
 
-        # Return only users with at least one group if filtered by app_name
-        return [user for user in users if user["groups"]] if app_name else users
+    @classmethod
+    def _filter_users_by_group(cls, users):
+        """Return only users who belong to at least one group."""
+        return [user for user in users if user["groups"]]
 
     @classmethod
     def _get_level(cls, group):
@@ -101,8 +129,8 @@ class UserService:
             cgroup
             for cgroup in all_groups
             if "parentId" in cgroup
-            and cgroup["parentId"] == parent_group["id"]
-            and cgroup["id"] != group["id"]
+               and cgroup["parentId"] == parent_group["id"]
+               and cgroup["id"] != group["id"]
         ]
         if len(all_groups_except_new_group) > 0:
             for del_group in all_groups_except_new_group:
@@ -134,7 +162,7 @@ class UserService:
                     "The requested action will delete all the subgroup mappings of the"
                     "given parent. Please pass 'del_sub_group_mappings' as 'true' if you want to proceed."
                 )
-            mapped_groups = cls.get_groups_by_user_id(user_id)
+            mapped_groups = cls.get_groups_by_username(user_id)
             mapped_sub_groups = [
                 mapped
                 for mapped in mapped_groups
@@ -160,9 +188,9 @@ class UserService:
         return all_groups
 
     @classmethod
-    def get_groups_by_user_id(cls, user_id):
+    def get_groups_by_username(cls, username):
         """Get groups for a specific user by their ID."""
-        groups = KeycloakService.get_user_groups(user_id)
+        groups = KeycloakService.get_user_groups_by_username(username)
         return groups
 
     @classmethod
@@ -186,3 +214,45 @@ class UserService:
 
         user.delete()
         return user
+
+    @classmethod
+    def get_group_members(cls, group_data):
+        """Get the members of a group by its name."""
+        current_app.logger.debug("Fetching group members with data: %s", group_data)
+        group_name = group_data.get("group_name")
+        sub_group_name = group_data.get("sub_group_name")
+
+        current_app.logger.debug("Fetching group by name: %s, sub-group: %s", group_name, sub_group_name)
+        group = KeycloakService.get_group_by_name(group_name, sub_group_name)
+
+        if not group:
+            current_app.logger.error("Group with name '%s' not found.", group_name)
+            raise ResourceNotFoundError(f"Group with name '{group_name}' not found.")
+
+        if sub_group_name:
+            current_app.logger.debug("Searching for sub-group: %s in group: %s", sub_group_name, group_name)
+            group = next(
+                (
+                    sub_group
+                    for sub_group in group.get('subGroups', [])
+                    if sub_group.get("name") == sub_group_name
+                ),
+                None,
+            )
+            if not group:
+                current_app.logger.error(
+                    "Sub-group with name '%s' not found in group '%s'.", sub_group_name, group_name
+                )
+                raise ResourceNotFoundError(
+                    f"Sub-group with name '{sub_group_name}' not found in group '{group_name}'."
+                )
+
+        group_id = group.get("id")
+        if not group_id:
+            current_app.logger.error("Group ID is missing or invalid for group: %s", group_name)
+            raise UnprocessableEntityError("Group ID is missing or invalid.")
+
+        current_app.logger.debug("Fetching members for group ID: %s", group_id)
+        members = KeycloakService.get_group_members(group_id)
+        current_app.logger.debug("Fetched %d members for group ID: %s", len(members), group_id)
+        return members

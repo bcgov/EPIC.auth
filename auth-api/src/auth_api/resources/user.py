@@ -20,13 +20,14 @@ from flask_restx import Namespace, Resource
 
 from auth_api.auth import auth
 from auth_api.exceptions import BusinessError, ResourceNotFoundError
+from auth_api.schemas.response.user_response import UserResponseSchema
 from auth_api.schemas.response.user_group_response import UserGroupResponseSchema
+from auth_api.schemas.request.get_group_members import GetGroupByNameRequest
 from auth_api.schemas.user import UserRequestSchema, UserSchema
 from auth_api.services.user_service import UserService
 from auth_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
-
 
 API = Namespace("users", description="Endpoints for User Management")
 """Custom exception messages
@@ -40,6 +41,9 @@ user_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 group_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, UserGroupResponseSchema(), "UserListItem"
+)
+user_response_list_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, UserResponseSchema(), "UserResponseList"
 )
 
 
@@ -56,14 +60,16 @@ class Users(Resource):
     @auth.require
     def get():
         """Fetch all users."""
-        users = UserService.get_all_users()
+        include_groups = request.args.get("include_groups", "true").lower() == "true"
+        search_text = request.args.get("search", None)
+        users = UserService.get_all_users(include_groups=include_groups, search_text=search_text)
         user_list_schema = UserSchema(many=True)
         return user_list_schema.dump(users), HTTPStatus.OK
 
 
 @cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<user_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
-@API.doc(params={"user_id": "The user identifier"})
+@API.route("/<username>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.doc(params={"username": "The user identifier"})
 class User(Resource):
     """Resource for managing a single user."""
 
@@ -72,11 +78,32 @@ class User(Resource):
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by id")
     @API.response(code=200, model=user_list_model, description="Success")
     @API.response(404, "Not Found")
-    def get(user_id):
-        """Fetch a user by id."""
-        user = UserService.get_user_by_id(user_id)
+    def get(username):
+        """Fetch a user by username."""
+        group_brief_representation = request.args.get("group_brief_representation", "false").lower() == "true"
+        user = UserService.get_user_by_username(username, group_brief_representation)
         if not user:
-            raise ResourceNotFoundError(f"User with {user_id} not found")
+            raise ResourceNotFoundError(f"User with {username} not found")
+        return UserSchema().dump(user), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS, PATCH, DELETE")
+@API.route("/guid/<user_auth_guid>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.doc(params={"username": "The user identifier"})
+class UserById(Resource):
+    """Resource for managing a single user."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by id")
+    @API.response(code=200, model=user_list_model, description="Success")
+    @API.response(404, "Not Found")
+    def get(user_auth_guid):
+        """Fetch a user by username."""
+        group_brief_representation = request.args.get("group_brief_representation", "false").lower() == "true"
+        user = UserService.get_user_by_id(user_auth_guid, group_brief_representation)
+        if not user:
+            raise ResourceNotFoundError(f"User {user_auth_guid} not found")
         return UserSchema().dump(user), HTTPStatus.OK
 
     @staticmethod
@@ -119,7 +146,7 @@ class UserGroups(Resource):
     @API.response(404, "Not Found")
     def get(user_id):
         """Fetch groups for a user by id."""
-        groups = UserService.get_groups_by_user_id(user_id)
+        groups = UserService.get_groups_by_username(user_id)
         if not groups:
             raise ResourceNotFoundError(f"No groups found for user with {user_id}")
         return UserGroupResponseSchema(many=True).dump(groups), HTTPStatus.OK
@@ -163,19 +190,24 @@ class UserGroupName(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET")
-@API.route("/groups", methods=["GET", "OPTIONS"])
-class Groups(Resource):
+@cors_preflight("GET, ""OPTIONS")
+@API.route("/groups/<group_name>/members", methods=["GET", "OPTIONS"])
+class GroupMembers(Resource):
     """Group resource."""
 
     @staticmethod
-    @auth.require
     @ApiHelper.swagger_decorators(
-        API, endpoint_description="Fetch all groups in keyclaok"
+        API, endpoint_description="Fetch all members of a group"
     )
-    @API.response(code=200, model=group_list_model, description="Groups List")
+    @API.response(code=200, model=user_response_list_model, description="Group Members List")
     @API.response(404, "Not Found")
-    def get():
-        """Get all groups."""
-        reponse_schema = UserGroupResponseSchema(many=True)
-        return reponse_schema.dump(UserService.get_groups()), HTTPStatus.OK
+    @auth.require
+    def get(group_name):
+        """Get group members by name."""
+        sub_group_name = request.args.get("sub_group_name", None)
+        group_data = GetGroupByNameRequest().load(
+            {"group_name": group_name, "sub_group_name": sub_group_name}
+        )
+        response_schema = UserResponseSchema(many=True)
+        members = UserService.get_group_members(group_data)
+        return response_schema.dump(members), HTTPStatus.OK

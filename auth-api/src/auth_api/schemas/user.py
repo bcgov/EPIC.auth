@@ -23,6 +23,7 @@ class UserSchema(Schema):
     email = fields.Str(data_key="email_address")
     username = fields.Str(data_key="username")
     groups = fields.List(fields.Nested(UserGroupResponseSchema))
+    enabled = fields.Bool(data_key="enabled")
 
     @pre_dump
     def convert_keys(self, data, **kwargs):
