@@ -109,8 +109,9 @@ class UserService:
     @classmethod
     def update_user_group(cls, user_id, user_data):
         """Update users group."""
-        app_name = g.app_name
+        app_name = g.app_name or user_data.get("app_name")
         group_name = user_data.get("group_name")
+
         path = f"/{app_name}/{group_name}" if app_name else group_name
         all_groups = cls.get_groups()
         parent_group = next(
