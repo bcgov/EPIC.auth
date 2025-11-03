@@ -160,6 +160,15 @@ class UserGroups(Resource):
             return "", HTTPStatus.NO_CONTENT
         raise BusinessError("Update failed", 500)
 
+    @staticmethod
+    @auth.require
+    def delete(user_id):
+        """Delete group mapping of the user."""
+        response = UserService.delete_all_user_groups(user_id)
+        if response.status_code == 204:
+            return "", HTTPStatus.NO_CONTENT
+        raise BusinessError("Delete failed", 500)
+
 
 @cors_preflight("OPTIONS, DELETE")
 @API.route("/<user_id>/groups/<string:group_name>", methods=["OPTIONS", "DELETE"])

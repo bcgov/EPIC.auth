@@ -175,6 +175,14 @@ class UserService:
             KeycloakService.delete_user_group(user_id, group["id"])
 
     @classmethod
+    def delete_all_user_groups(cls, user_id):
+        """Delete all user-group mappings for a user."""
+        from concurrent.futures import ThreadPoolExecutor
+        mapped_groups = cls.get_groups_by_username(user_id)
+        with ThreadPoolExecutor() as executor:
+            executor.map(lambda group: KeycloakService.delete_user_group(user_id, group["id"]), mapped_groups)
+
+    @classmethod
     def get_groups(cls):
         """Get groups that has "level" attribute set up."""
         groups = KeycloakService.get_groups()
