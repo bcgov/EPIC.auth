@@ -6,6 +6,7 @@ from auth_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from auth_api.models.user import User as UserModel
 
 from .keycloak import KeycloakService
+from ..utils.util import get_current_app
 
 
 class UserService:
@@ -177,10 +178,31 @@ class UserService:
     @classmethod
     def delete_all_user_groups(cls, user_id):
         """Delete all user-group mappings for a user."""
-        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         mapped_groups = cls.get_groups_by_username(user_id)
+        results = []
+        kc_user_id = KeycloakService.get_user_by_username(user_id)["id"]
+
+        app = get_current_app()
+
+        def delete_from_keycloak(group):
+            with app.app_context():
+                try:
+                    response = KeycloakService.delete_user_group(user_id, group["id"], kc_user_id=kc_user_id)
+                    return response.status_code == 204
+                except Exception as e:
+                    current_app.logger.error(
+                        f"Failed to delete group {group['id']} for user {user_id}: {e}"
+                    )
+                    return False
+
         with ThreadPoolExecutor() as executor:
-            executor.map(lambda group: KeycloakService.delete_user_group(user_id, group["id"]), mapped_groups)
+            futures = [executor.submit(delete_from_keycloak, group) for group in mapped_groups]
+            for future in as_completed(futures):
+                results.append(future.result())
+
+        return all(results)
 
     @classmethod
     def get_groups(cls):
