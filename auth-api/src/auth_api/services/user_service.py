@@ -164,7 +164,7 @@ class UserService:
                     "The requested action will delete all the subgroup mappings of the"
                     "given parent. Please pass 'del_sub_group_mappings' as 'true' if you want to proceed."
                 )
-            mapped_groups = cls.get_groups_by_username(user_id)
+            mapped_groups = cls.get_groups_by_username(username=user_id)
             mapped_sub_groups = [
                 mapped
                 for mapped in mapped_groups
