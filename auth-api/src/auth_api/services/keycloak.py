@@ -153,7 +153,7 @@ class KeycloakService:
     @staticmethod
     def get_user_groups_by_username(username, user_id=None, brief_representation=False):
         """Get groups directly associated with a specific user by their ID."""
-        if user_id:
+        if not user_id:
             user_id = KeycloakService.get_user_by_username(username)["id"]
         response = KeycloakService._request_keycloak(f"users/{user_id}/groups?briefRepresentation={brief_representation}")
         return response.json()
