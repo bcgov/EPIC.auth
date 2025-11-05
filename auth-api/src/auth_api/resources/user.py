@@ -134,8 +134,8 @@ class UserById(Resource):
         return UserSchema().dump(deleted_user), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, PUT")
-@API.route("/<user_id>/groups", methods=["GET", "OPTIONS", "PUT"])
+@cors_preflight("GET, OPTIONS, PUT, DELETE")
+@API.route("/<user_id>/groups", methods=["GET", "OPTIONS", "PUT", "DELETE"])
 @API.doc(params={"user_id": "The user identifier"})
 class UserGroups(Resource):
     """Resource for managing user groups."""
@@ -159,6 +159,15 @@ class UserGroups(Resource):
         if response.status_code == 204:
             return "", HTTPStatus.NO_CONTENT
         raise BusinessError("Update failed", 500)
+
+    @staticmethod
+    @auth.require
+    def delete(user_id):
+        """Delete group mapping of the user."""
+        success = UserService.delete_all_user_groups(user_id)
+        if success:
+            return "", HTTPStatus.NO_CONTENT
+        return "", HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @cors_preflight("OPTIONS, DELETE")
