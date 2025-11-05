@@ -119,9 +119,10 @@ class KeycloakService:
         )
 
     @staticmethod
-    def delete_user_group(user_id, group_id):
+    def delete_user_group(user_id, group_id, kc_user_id=None):
         """Delete user-group mapping."""
-        kc_user_id = KeycloakService.get_user_by_username(user_id)["id"]
+        if not kc_user_id:
+            kc_user_id = KeycloakService.get_user_by_username(user_id)["id"]
         return KeycloakService._request_keycloak(
             f"users/{kc_user_id}/groups/{group_id}", HttpMethod.DELETE
         )
@@ -131,9 +132,10 @@ class KeycloakService:
         relative_url, http_method: HttpMethod = HttpMethod.GET, data=None
     ):
         """Request actual keycloak service."""
-        base_url = current_app.config.get("KEYCLOAK_BASE_URL")
-        realm = current_app.config.get("KEYCLOAK_REALM_NAME")
-        timeout = int(current_app.config.get("CONNECT_TIMEOUT", 60))
+        config = current_app.config
+        base_url = config.get("KEYCLOAK_BASE_URL")
+        realm = config.get("KEYCLOAK_REALM_NAME")
+        timeout = int(config.get("CONNECT_TIMEOUT", 60))
         admin_token = KeycloakService._get_admin_token()
         headers = {
             "Content-Type": "application/json",
@@ -153,7 +155,7 @@ class KeycloakService:
     @staticmethod
     def get_user_groups_by_username(username, user_id=None, brief_representation=False):
         """Get groups directly associated with a specific user by their ID."""
-        if user_id:
+        if not user_id:
             user_id = KeycloakService.get_user_by_username(username)["id"]
         response = KeycloakService._request_keycloak(f"users/{user_id}/groups?briefRepresentation={brief_representation}")
         return response.json()

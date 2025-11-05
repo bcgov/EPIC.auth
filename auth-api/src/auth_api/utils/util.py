@@ -22,6 +22,7 @@ import os
 import re
 import urllib
 
+from flask import Flask
 from humps.main import camelize, decamelize
 
 
@@ -85,3 +86,8 @@ def escape_wam_friendly_url(param):
     base64_org_name = base64.b64encode(bytes(param, encoding='utf-8')).decode('utf-8')
     encode_org_name = urllib.parse.quote(base64_org_name, safe='')
     return encode_org_name
+
+
+def get_current_app() -> Flask:
+    from flask import current_app
+    return current_app._get_current_object()
