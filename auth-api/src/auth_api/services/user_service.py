@@ -8,6 +8,12 @@ from auth_api.models.user import User as UserModel
 from .keycloak import KeycloakService
 from ..utils.util import get_current_app
 
+ALLOWED_USER_UPDATE_FIELDS = {
+    "firstName",
+    "lastName",
+    "enabled",
+}
+
 
 class UserService:
     """User management service."""
@@ -29,6 +35,44 @@ class UserService:
         user_id = user.get("id")
         enriched_user = cls.enrich_user_with_groups(app_name, group_brief_representation, user, user_id, username)
         return enriched_user
+
+    @classmethod
+    def _validate_user_update_allowed_fields(cls, user_data: dict):
+        """Ensure only allowed fields are being updated."""
+        invalid_fields = [key for key in user_data if key not in ALLOWED_USER_UPDATE_FIELDS]
+        if invalid_fields:
+            raise ValueError(f"Update contains disallowed fields: {invalid_fields}")
+
+    @classmethod
+    def update_user_by_username(cls, username, user_data):
+        """Update a Keycloak user by username with strict field control.
+
+        Only a limited set of safe fields are updatable. All other fields are preserved.
+
+        :param username: The Keycloak username.
+        :param user_data: Partial UserRepresentation with only allowed fields.
+        :return: The updated user representation.
+        """
+        cls._validate_user_update_allowed_fields(user_data)
+
+        # ⚠️ IMPORTANT: Keycloak's PUT /users/{id} endpoint does NOT merge data.
+        # It expects the FULL UserRepresentation and will REPLACE missing fields with null/empty values.
+        # So we must fetch the existing user first to preserve all unchanged data.
+        user = KeycloakService.get_user_by_username(username)
+        user_id = user.get("id")
+
+        if not user_id:
+            raise ValueError(f"User '{username}' not found in Keycloak.")
+
+        for key, value in user_data.items():
+            user[key] = value
+
+        response = KeycloakService.update_user(user_id, user)
+
+        if response.status_code == 204:
+            return KeycloakService.get_user_by_id(user_id)
+
+        return response.json()
 
     @classmethod
     def enrich_user_with_groups(cls, app_name, group_brief_representation, user, user_id, username):
@@ -223,28 +267,6 @@ class UserService:
         """Get groups for a specific user by their ID."""
         groups = KeycloakService.get_user_groups_by_username(username)
         return groups
-
-    @classmethod
-    def create_user(cls, user_data):
-        """Create user."""
-        created_user = UserModel.create_user(user_data)
-        return created_user
-
-    @classmethod
-    def update_user(cls, user_id, user_data):
-        """Update user."""
-        updated_user = UserModel.update_user(user_id, user_data)
-        return updated_user
-
-    @classmethod
-    def delete_user(cls, user_id):
-        """Update user."""
-        user = UserModel.find_by_id(user_id)
-        if not user:
-            return None
-
-        user.delete()
-        return user
 
     @classmethod
     def get_group_members(cls, group_data):

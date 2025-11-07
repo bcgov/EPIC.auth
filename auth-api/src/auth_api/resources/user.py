@@ -23,7 +23,7 @@ from auth_api.exceptions import BusinessError, ResourceNotFoundError
 from auth_api.schemas.response.user_response import UserResponseSchema
 from auth_api.schemas.response.user_group_response import UserGroupResponseSchema
 from auth_api.schemas.request.get_group_members import GetGroupByNameRequest
-from auth_api.schemas.user import UserRequestSchema, UserSchema
+from auth_api.schemas.user import UserSchema, UserUpdateRequestSchema
 from auth_api.services.user_service import UserService
 from auth_api.utils.util import cors_preflight
 
@@ -33,8 +33,8 @@ API = Namespace("users", description="Endpoints for User Management")
 """Custom exception messages
 """
 
-user_request_model = ApiHelper.convert_ma_schema_to_restx_model(
-    API, UserRequestSchema(), "User"
+user_partial_update_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, UserUpdateRequestSchema(), "User Update Request Model"
 )
 user_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, UserSchema(), "UserListItem"
@@ -86,6 +86,19 @@ class User(Resource):
             raise ResourceNotFoundError(f"User with {username} not found")
         return UserSchema().dump(user), HTTPStatus.OK
 
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(API, endpoint_description="Update allowed fields of a user (partial)")
+    @API.expect(user_partial_update_model)
+    @API.response(code=200, model=user_list_model, description="Success")
+    @API.response(400, "Bad Request")
+    @API.response(404, "Not Found")
+    def patch(username):
+        """Update a user by username."""
+        user_data = UserUpdateRequestSchema().load(API.payload)
+        updated_user = UserService.update_user_by_username(username, user_data)
+        return UserSchema().dump(updated_user), HTTPStatus.OK
+
 
 @cors_preflight("GET, OPTIONS, PATCH, DELETE")
 @API.route("/guid/<user_auth_guid>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
@@ -105,33 +118,6 @@ class UserById(Resource):
         if not user:
             raise ResourceNotFoundError(f"User {user_auth_guid} not found")
         return UserSchema().dump(user), HTTPStatus.OK
-
-    @staticmethod
-    @auth.require
-    @ApiHelper.swagger_decorators(API, endpoint_description="Update a user by id")
-    @API.expect(user_request_model)
-    @API.response(code=200, model=user_list_model, description="Success")
-    @API.response(400, "Bad Request")
-    @API.response(404, "Not Found")
-    def patch(user_id):
-        """Update a user by id."""
-        user_data = UserRequestSchema().load(API.payload)
-        updated_user = UserService.update_user(user_id, user_data)
-        if not updated_user:
-            raise ResourceNotFoundError(f"User with {user_id} not found")
-        return UserSchema().dump(updated_user), HTTPStatus.OK
-
-    @staticmethod
-    @auth.require
-    @ApiHelper.swagger_decorators(API, endpoint_description="Delete a user by id")
-    @API.response(code=200, model=user_list_model, description="Deleted")
-    @API.response(404, "Not Found")
-    def delete(user_id):
-        """Delete a user by id."""
-        deleted_user = UserService.delete_user(user_id)
-        if not deleted_user:
-            raise ResourceNotFoundError(f"User with {user_id} not found")
-        return UserSchema().dump(deleted_user), HTTPStatus.OK
 
 
 @cors_preflight("GET, OPTIONS, PUT, DELETE")
