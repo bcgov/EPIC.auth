@@ -68,11 +68,8 @@ class UserService:
             user[key] = value
 
         response = KeycloakService.dangerously_overwrite_all_user_data(user_id, user)
-
-        if response.status_code == 204:
-            return KeycloakService.get_user_by_id(user_id)
-
-        return response.json()
+        response.raise_for_status()
+        return
 
     @classmethod
     def enrich_user_with_groups(cls, app_name, group_brief_representation, user, user_id, username):

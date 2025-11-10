@@ -96,8 +96,8 @@ class User(Resource):
     def patch(username):
         """Update a user by username."""
         user_data = UserUpdateRequestSchema().load(API.payload)
-        updated_user = UserService.update_user_by_username(username, user_data)
-        return UserSchema().dump(updated_user), HTTPStatus.OK
+        UserService.update_user_by_username(username, user_data)
+        return None, HTTPStatus.NO_CONTENT
 
 
 @cors_preflight("GET, OPTIONS, PATCH, DELETE")
