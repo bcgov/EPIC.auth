@@ -56,6 +56,43 @@ class KeycloakService:
         return users[0]
 
     @staticmethod
+    def dangerously_overwrite_all_user_data(user_id: str, user_representation: dict):
+        """Update an existing Keycloak user.
+
+        ⚠️ WARNING:
+        This method performs a FULL REPLACEMENT of the UserRepresentation object in Keycloak.
+        Any fields not included in `user_representation` will be OVERWRITTEN or CLEARED.
+
+        Always perform a GET request first to fetch the existing user,
+        apply only the changes you need, and then PUT the complete representation back.
+        Never send partial data directly to this endpoint — Keycloak does not perform merging.
+
+        :param user_id: The Keycloak user UUID.
+        :param user_representation: The full UserRepresentation JSON to PUT.
+        :return: The raw response from Keycloak (204 No Content expected on success).
+        """
+        import json
+
+        # ⚠️ CRITICAL NOTE:
+        # This call sends the entire user object as-is.
+        # If `user_representation` is missing fields (e.g., attributes, federatedIdentities),
+        # Keycloak will interpret them as removed and wipe them out.
+        #
+        # Safe pattern:
+        #   1. user = get_user_by_id(user_id)
+        #   2. modify user fields as needed
+        #   3. update_user(user_id, user)
+        #
+        # This ensures you preserve all other properties.
+        response = KeycloakService._request_keycloak(
+            f"users/{user_id}",
+            HttpMethod.PUT,
+            data=json.dumps(user_representation)
+        )
+
+        return response
+
+    @staticmethod
     def get_user_by_id(user_id):
         """Get users."""
         response = KeycloakService._request_keycloak(f"users/{user_id}")
