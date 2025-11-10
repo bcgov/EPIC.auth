@@ -56,7 +56,7 @@ class KeycloakService:
         return users[0]
 
     @staticmethod
-    def update_user(user_id: str, user_representation: dict):
+    def dangerously_overwrite_all_user_data(user_id: str, user_representation: dict):
         """Update an existing Keycloak user.
 
         ⚠️ WARNING:

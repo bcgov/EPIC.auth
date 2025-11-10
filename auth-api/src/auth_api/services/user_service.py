@@ -67,7 +67,7 @@ class UserService:
         for key, value in user_data.items():
             user[key] = value
 
-        response = KeycloakService.update_user(user_id, user)
+        response = KeycloakService.dangerously_overwrite_all_user_data(user_id, user)
 
         if response.status_code == 204:
             return KeycloakService.get_user_by_id(user_id)
