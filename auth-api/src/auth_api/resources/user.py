@@ -181,7 +181,8 @@ class UserGroupName(Resource):
     def delete(user_id, group_name):
         """Delete the user group mapping by the group name."""
         del_sub_group_mappings = bool(request.args.get("del_sub_group_mappings", False))
-        UserService.delete_user_group(user_id, group_name, del_sub_group_mappings)
+        payload = API.payload
+        UserService.delete_user_group(user_id, group_name, del_sub_group_mappings, payload)
         return {}, HTTPStatus.NO_CONTENT
 
 
