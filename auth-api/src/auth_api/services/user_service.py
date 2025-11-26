@@ -181,9 +181,9 @@ class UserService:
         return result
 
     @classmethod
-    def delete_user_group(cls, user_id, group_name, del_sub_group_mappings):
+    def delete_user_group(cls, user_id, group_name, del_sub_group_mappings, user_data=None):
         """Delete the user-group mapping in keycloak."""
-        app_name = g.app_name
+        app_name = g.app_name or (user_data.get("app_name") if user_data else None)
         if app_name == group_name:
             path = f"/{app_name}"
         else:
