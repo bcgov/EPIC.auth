@@ -24,6 +24,7 @@ class UserSchema(Schema):
     username = fields.Str(data_key="username")
     groups = fields.List(fields.Nested(UserGroupResponseSchema))
     enabled = fields.Bool(data_key="enabled")
+    attributes = fields.Dict(data_key="attributes")
 
     @pre_dump
     def convert_keys(self, data, **kwargs):
