@@ -30,6 +30,9 @@ jobs:
         shell: bash
         run: |
           oc project ${{ secrets.OPENSHIFT_REPOSITORY }}-tools
+          CURRENT_DATE=$(date +"%d_%m_%Y")
+          oc tag auth-api:${{ github.event.inputs.environment }} auth-api:${{ github.event.inputs.environment }}_bkp_${CURRENT_DATE}
+          oc tag auth-web:${{ github.event.inputs.environment }} auth-web:${{ github.event.inputs.environment }}_bkp_${CURRENT_DATE}
           oc tag auth-api:latest auth-api:${{ github.event.inputs.environment }}
           oc tag auth-web:latest auth-web:${{ github.event.inputs.environment }}
           
