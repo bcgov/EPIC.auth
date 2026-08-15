@@ -133,9 +133,11 @@ class KeycloakService:
         return groups
 
     @staticmethod
-    def get_group_members(group_id):
+    def get_group_members(group_id, max: int = 200):
         """Get the members of a group."""
-        response = KeycloakService._request_keycloak(f"groups/{group_id}/members")
+        response = KeycloakService._request_keycloak(
+            f"groups/{group_id}/members?max={max}"
+        )
         return response.json()
 
     @staticmethod
