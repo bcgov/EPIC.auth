@@ -35,4 +35,3 @@ jobs:
           oc tag auth-api:latest auth-api:${{ github.event.inputs.environment }}
           
           oc rollout restart deployment/auth-api -n ${{ secrets.OPENSHIFT_REPOSITORY }}-${{ github.event.inputs.environment }}
-          oc rollout restart deployment/auth-web -n ${{ secrets.OPENSHIFT_REPOSITORY }}-${{ github.event.inputs.environment }}
