@@ -11,6 +11,8 @@ data:
   JWT_OIDC_ISSUER: {{ .Values.auth.jwt.issuer }}
   JWT_OIDC_JWKS_CACHE_TIMEOUT: "{{ .Values.auth.jwt.cacheTimeout }}"
   JWT_OIDC_WELL_KNOWN_CONFIG: {{ .Values.auth.jwt.wellKnownConfig }}
+  ALLOWED_CLIENT_IDS: "{{ .Values.auth.allowedClientIds }}"
+  CALLER_CHECK_LOG_ONLY: "{{ .Values.auth.callerCheckLogOnly }}"
   PYTHONBUFFERED: "{{ .Values.python.pythonBuffered }}"
   CDOGS_TOKEN_END_POINT: {{ .Values.cdogs.tokenEndpoint }}
   CDOGS_API_ENDPOINT: {{ .Values.cdogs.apiEndpoint }}

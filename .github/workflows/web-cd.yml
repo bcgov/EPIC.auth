@@ -25,7 +25,7 @@ env:
 
 jobs:
   web-cd:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     if: github.repository == 'bcgov/EPIC.auth'
     environment:
@@ -59,4 +59,4 @@ jobs:
       - name: Rollout
         shell: bash
         run: |
-          oc rollout restart deployment/${{ env.APP_NAME }} -n ${{ secrets.OPENSHIFT_REPOSITORY }}-${{ env.TAG_NAME }}
+          oc rollout status dc/${{ env.APP_NAME }} -n ${{ secrets.OPENSHIFT_REPOSITORY }}-${{ env.TAG_NAME }} -w

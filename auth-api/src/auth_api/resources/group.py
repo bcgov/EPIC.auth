@@ -38,11 +38,11 @@ class Groups(Resource):
     """Resource for fetching a group by name."""
 
     @staticmethod
+    @auth.require
     @API.response(code=200, description="Group Found", model=group_response_model)
     @ApiHelper.swagger_decorators(API, endpoint_description="Get group by name")
     @API.response(400, "Bad Request")
     @API.response(404, "Group Not Found")
-    @auth.require
     def get(group_name):
         """Get group by name."""
         include_sub_groups = request.args.get("include_sub_groups", "true").lower() == "true"

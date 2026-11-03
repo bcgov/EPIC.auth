@@ -80,6 +80,16 @@ spec:
               configMapKeyRef:
                 name: {{ .Chart.Name }}
                 key: JWT_OIDC_WELL_KNOWN_CONFIG
+          - name: ALLOWED_CLIENT_IDS
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Chart.Name }}
+                key: ALLOWED_CLIENT_IDS
+          - name: CALLER_CHECK_LOG_ONLY
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Chart.Name }}
+                key: CALLER_CHECK_LOG_ONLY
           - name: PYTHONBUFFERED
             valueFrom:
               configMapKeyRef:

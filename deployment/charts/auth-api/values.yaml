@@ -36,6 +36,13 @@ auth:
     issuer: https://dev.loginproxy.gov.bc.ca/auth/realms/eao-epic
     cacheTimeout: "300"
     wellKnownConfig: https://dev.loginproxy.gov.bc.ca/auth/realms/eao-epic/.well-known/openid-configuration
+  # Layered caller authorization (see auth_api.auth.Auth).
+  # allowedClientIds: comma separated Keycloak client ids (matched against the
+  # token `azp`) permitted when the caller is an IDIR end user.
+  # callerCheckLogOnly: "true" logs unauthorized callers but still allows them,
+  # so the allowlist can be populated from real traffic before enforcing.
+  allowedClientIds: epic-centre
+  callerCheckLogOnly: "true"
   keycloak:
     uri: https://dev.loginproxy.gov.bc.ca
     realm: eao-epic
