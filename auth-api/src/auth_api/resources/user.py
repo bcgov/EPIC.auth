@@ -53,11 +53,11 @@ class Users(Resource):
     """Resource for managing users."""
 
     @staticmethod
+    @auth.require
     @API.response(code=200, description="Success", model=[user_list_model])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all users")
     @API.response(400, "Bad Request")
     @API.response(404, "Not Found")
-    @auth.require
     def get():
         """Fetch all users."""
         include_groups = request.args.get("include_groups", "true").lower() == "true"
@@ -212,12 +212,12 @@ class GroupMembers(Resource):
     """Group resource."""
 
     @staticmethod
+    @auth.require
     @ApiHelper.swagger_decorators(
         API, endpoint_description="Fetch all members of a group"
     )
     @API.response(code=200, model=user_response_list_model, description="Group Members List")
     @API.response(404, "Not Found")
-    @auth.require
     def get(group_name):
         """Get group members by name."""
         sub_group_name = request.args.get("sub_group_name", None)
