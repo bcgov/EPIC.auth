@@ -91,6 +91,16 @@ class _Config:  # pylint: disable=too-few-public-methods
         _get_config("JWT_OIDC_JWKS_CACHE_TIMEOUT", default=300)
     )
 
+    # Layered caller authorization (applied on top of token/audience validation).
+    # ALLOWED_CLIENT_IDS: comma separated Keycloak client ids (matched against the
+    # token's `azp`) permitted when the caller is an IDIR end user. Non-IDIR callers
+    # must be service accounts.
+    # CALLER_CHECK_LOG_ONLY: when "true" an unauthorized caller is logged but still
+    # allowed through, so the allowlist can be populated from real traffic before
+    # enforcement is switched on.
+    ALLOWED_CLIENT_IDS = _get_config("ALLOWED_CLIENT_IDS", default="")
+    CALLER_CHECK_LOG_ONLY = _get_config("CALLER_CHECK_LOG_ONLY", default="false")
+
     KEYCLOAK_BASE_URL = _get_config("KEYCLOAK_BASE_URL")
     KEYCLOAK_REALM_NAME = _get_config("KEYCLOAK_REALM_NAME")
     KEYCLOAK_ADMIN_CLIENT = _get_config("KEYCLOAK_ADMIN_CLIENT")

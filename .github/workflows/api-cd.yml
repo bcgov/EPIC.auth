@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - "release/**"
     paths:
       - "auth-api/**"
   workflow_dispatch:
@@ -21,7 +22,8 @@ defaults:
 
 env:
   APP_NAME: "auth-api"
-  TAG_NAME: "${{ github.event.inputs.environment || 'dev' }}" # If the environment type is manually selected, use the input value; otherwise, use 'dev' as default
+  # Precedence: manual input > 'test' for release/** branches > 'dev' default (e.g. main)
+  TAG_NAME: "${{ github.event.inputs.environment || (startsWith(github.ref, 'refs/heads/release/') && 'test') || 'dev' }}"
 
 jobs:
   api-cd:
@@ -29,7 +31,7 @@ jobs:
 
     if: github.repository == 'bcgov/EPIC.auth'
     environment:
-      name: "dev"
+      name: ${{ env.TAG_NAME }}
 
     steps:
       - uses: actions/checkout@v2
