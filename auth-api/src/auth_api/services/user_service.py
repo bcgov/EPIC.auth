@@ -1,12 +1,13 @@
 """Service for user management."""
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from flask import g, current_app
+from flask import current_app, g
 
 from auth_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
-from auth_api.models.user import User as UserModel
 
-from .keycloak import KeycloakService
 from ..utils.util import get_current_app
+from .keycloak import KeycloakService
+
 
 ALLOWED_USER_UPDATE_FIELDS = {
     "firstName",
@@ -69,10 +70,12 @@ class UserService:
 
         response = KeycloakService.dangerously_overwrite_all_user_data(user_id, user)
         response.raise_for_status()
-        return
 
     @classmethod
-    def enrich_user_with_groups(cls, app_name, group_brief_representation, user, user_id, username):
+    def enrich_user_with_groups(  # pylint: disable=too-many-arguments
+        cls, app_name, group_brief_representation, user, user_id, username
+    ):
+        """Add the user's groups to the user, keeping only the app's groups when app_name is set."""
         user_groups = KeycloakService.get_user_groups_by_username(username, user_id, group_brief_representation)
         app_groups = (
             [
@@ -219,8 +222,6 @@ class UserService:
     @classmethod
     def delete_all_user_groups(cls, user_id):
         """Delete all user-group mappings for a user."""
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
         mapped_groups = cls.get_groups_by_username(user_id)
         results = []
         kc_user_id = KeycloakService.get_user_by_username(user_id)["id"]
@@ -232,7 +233,8 @@ class UserService:
                 try:
                     response = KeycloakService.delete_user_group(user_id, group["id"], kc_user_id=kc_user_id)
                     return response.status_code == 204
-                except Exception as e:
+                # Any failure counts as not deleted, so one group can't stop the rest
+                except Exception as e:  # pylint: disable=broad-exception-caught # noqa: B902
                     current_app.logger.error(
                         f"Failed to delete group {group['id']} for user {user_id}: {e}"
                     )

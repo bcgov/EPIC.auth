@@ -19,14 +19,48 @@ All modules and lookups get their configuration from the Flask config,
 rather than reading environment variables directly or by accessing this configuration directly.
 """
 
+import base64
 import os
 import sys
+from functools import lru_cache
 
 from dotenv import find_dotenv, load_dotenv
 
 
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
+
+# Key id of the keypair the test suite signs its tokens with
+TEST_JWT_KID = "epic-auth-test"
+
+
+def _b64url_uint(value: int) -> str:
+    """Encode an integer as a JWK does: big-endian, base64url, unpadded."""
+    as_bytes = value.to_bytes((value.bit_length() + 7) // 8, "big")
+    return base64.urlsafe_b64encode(as_bytes).decode("utf-8").rstrip("=")
+
+
+@lru_cache(maxsize=1)
+def generate_test_jwt_keypair():
+    """Return (private key PEM, public JWKS) for the tokens the test suite signs.
+
+    Generated per process so no private key is committed. Cached so every
+    TestConfig in a run signs and verifies with the same key.
+    """
+    import rsa  # pylint: disable=import-outside-toplevel
+
+    public_key, private_key = rsa.newkeys(2048)
+    public_jwks = {
+        "keys": [{
+            "kid": TEST_JWT_KID,
+            "kty": "RSA",
+            "alg": "RS256",
+            "use": "sig",
+            "n": _b64url_uint(public_key.n),
+            "e": _b64url_uint(public_key.e),
+        }]
+    }
+    return private_key.save_pkcs1().decode("utf-8"), public_jwks
 
 
 def get_named_config(config_name: str = "development"):
@@ -132,6 +166,12 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     JWT_OIDC_WELL_KNOWN_CONFIG = os.getenv("JWT_OIDC_WELL_KNOWN_CONFIG")
     JWT_OIDC_TEST_ALGORITHMS = os.getenv("JWT_OIDC_TEST_ALGORITHMS")
     JWT_OIDC_TEST_JWKS_URI = os.getenv("JWT_OIDC_TEST_JWKS_URI", default=None)
+
+    def __init__(self):
+        """Use this run's test keypair, so tokens are verified locally without Keycloak."""
+        private_key_pem, public_jwks = generate_test_jwt_keypair()
+        self.JWT_OIDC_TEST_PRIVATE_KEY_PEM = private_key_pem  # pylint: disable=invalid-name
+        self.JWT_OIDC_TEST_KEYS = public_jwks  # pylint: disable=invalid-name
 
 
 class DockerConfig(_Config):  # pylint: disable=too-few-public-methods

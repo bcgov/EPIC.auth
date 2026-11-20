@@ -11,19 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Local fixtures for service-level unit tests.
 
-"""Tests to assure the Notification utilities.
-
-Test-Suite to ensure that the Notification methods are working as expected.
+These tests mock KeycloakService and build their own Flask app, so the Docker-backed
+Keycloak and JWT setup from the top-level conftest is not needed.
 """
-
 import pytest
 
-from auth_api.utils import notification
 
-
-@pytest.mark.parametrize('test_input_email,expected',
-                         [('helo@gw.com', True), ('helo', False), (None, False), ('', False)])
-def test_is_valid_email(test_input_email, expected):
-    """Assert that the valid email method works well.."""
-    assert notification.is_valid_email(test_input_email) == expected
+@pytest.fixture(scope="session", autouse=True)
+def auto():  # pylint: disable=function-redefined
+    """Override the Docker-backed session fixture with a no-op for service tests."""
+    yield

@@ -89,5 +89,6 @@ def escape_wam_friendly_url(param):
 
 
 def get_current_app() -> Flask:
+    """Return the app behind the current_app proxy, for use outside the request's thread."""
     from flask import current_app
     return current_app._get_current_object()

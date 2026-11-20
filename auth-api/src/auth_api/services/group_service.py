@@ -24,4 +24,3 @@ class GroupService:
             child_groups = KeycloakService.get_sub_groups(parent_group.get("id"))
             parent_group["subGroups"] = child_groups
         return parent_group
-

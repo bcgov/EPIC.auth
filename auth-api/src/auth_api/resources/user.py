@@ -186,7 +186,7 @@ class UserGroupName(Resource):
                 user_id, group_name, sub_group_name
             )
         except ValueError as e:
-            raise ResourceNotFoundError(str(e))
+            raise ResourceNotFoundError(str(e)) from e
         if response.status_code == 204:
             return "", HTTPStatus.NO_CONTENT
         raise BusinessError("Group assignment failed", 500)
@@ -206,7 +206,7 @@ class UserGroupName(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, ""OPTIONS")
+@cors_preflight("GET, OPTIONS")
 @API.route("/groups/<group_name>/members", methods=["GET", "OPTIONS"])
 class GroupMembers(Resource):
     """Group resource."""
@@ -246,10 +246,10 @@ class UserByEmail(Resource):
         """Fetch a user by email address."""
         try:
             user = UserService.get_user_by_email(email)
-        except ValueError:
+        except ValueError as exc:
             raise ResourceNotFoundError(
                 f"User with email '{email}' not found"
-            )
+            ) from exc
         if not user:
             raise ResourceNotFoundError(
                 f"User with email '{email}' not found"

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Keycloak admin functions."""
+import json
 from urllib.parse import urlencode
 
 import requests
@@ -71,8 +72,6 @@ class KeycloakService:
         :param user_representation: The full UserRepresentation JSON to PUT.
         :return: The raw response from Keycloak (204 No Content expected on success).
         """
-        import json
-
         # ⚠️ CRITICAL NOTE:
         # This call sends the entire user object as-is.
         # If `user_representation` is missing fields (e.g., attributes, federatedIdentities),
@@ -99,7 +98,7 @@ class KeycloakService:
         user = response.json()
 
         if not user:
-            raise ValueError(f"User not found.")
+            raise ValueError("User not found.")
 
         # Assuming usernames are unique, return the first user found
         return user
@@ -182,10 +181,12 @@ class KeycloakService:
         url = f"{base_url}/auth/admin/realms/{realm}/{relative_url}"
         if http_method == HttpMethod.GET:
             response = requests.get(url, headers=headers, timeout=timeout)
-        if http_method == HttpMethod.PUT:
+        elif http_method == HttpMethod.PUT:
             response = requests.put(url, headers=headers, data=data, timeout=timeout)
-        if http_method == HttpMethod.DELETE:
+        elif http_method == HttpMethod.DELETE:
             response = requests.delete(url, headers=headers, timeout=timeout)
+        else:
+            raise ValueError(f"Unsupported HTTP method for Keycloak: {http_method}")
         response.raise_for_status()
         return response
 
@@ -194,7 +195,9 @@ class KeycloakService:
         """Get groups directly associated with a specific user by their ID."""
         if not user_id:
             user_id = KeycloakService.get_user_by_username(username)["id"]
-        response = KeycloakService._request_keycloak(f"users/{user_id}/groups?briefRepresentation={brief_representation}")
+        response = KeycloakService._request_keycloak(
+            f"users/{user_id}/groups?briefRepresentation={brief_representation}"
+        )
         return response.json()
 
     @staticmethod

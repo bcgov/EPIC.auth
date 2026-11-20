@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common setup and fixtures for the pytest suite used by this service."""
-import time
 from random import random
 
 import pytest
@@ -137,17 +136,12 @@ def client_id():
 
 
 @pytest.fixture(scope='session', autouse=True)
-def auto(docker_services, app):
-    """Spin up a keycloak instance and initialize jwt."""
-    if app.config['USE_TEST_KEYCLOAK_DOCKER']:
-        docker_services.start('keycloak')
-        docker_services.wait_for_service('keycloak', 8081)
+def auto(app):  # pylint: disable=redefined-outer-name
+    """Verify tokens against the TestConfig keypair.
 
+    create_app skips this when FLASK_ENV is 'testing', as it is in CI.
+    """
     setup_jwt_manager(app, _jwt)
-
-    if app.config['USE_DOCKER_MOCK']:
-        docker_services.start('proxy')
-        time.sleep(10)
 
 
 @pytest.fixture(scope='session')
